@@ -1,6 +1,6 @@
 package hasab.compiler.frontend.ast
 
-// ── Declaration AST Nodes ──────────────────────────────────────
+// -- Declaration AST Nodes --
 
 public data class FunctionParam(
     val name: String,
@@ -11,6 +11,7 @@ public data class FunctionParam(
     val column: Int,
     val startOffset: Int,
     val endOffset: Int,
+    val docComment: String? = null,
 )
 
 public data class StructField(
@@ -22,6 +23,7 @@ public data class StructField(
     val column: Int,
     val startOffset: Int,
     val endOffset: Int,
+    val docComment: String? = null,
 )
 
 public data class EnumVariant(
@@ -32,6 +34,7 @@ public data class EnumVariant(
     val column: Int,
     val startOffset: Int,
     val endOffset: Int,
+    val docComment: String? = null,
 )
 
 public sealed interface Decl : AstNode
@@ -47,7 +50,11 @@ public data class FnDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> =
+        parameters.mapNotNull { it.type } + listOfNotNull(returnType, body)
+}
 
 public data class StructDecl(
     val name: String,
@@ -58,7 +65,10 @@ public data class StructDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = fields.map { it.type }
+}
 
 public data class EnumDecl(
     val name: String,
@@ -69,7 +79,10 @@ public data class EnumDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = variants.flatMap { v -> v.fields.map { it.type } }
+}
 
 public data class ImplDecl(
     val targetType: TypeNode,
@@ -79,7 +92,10 @@ public data class ImplDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = listOf(targetType) + methods
+}
 
 public data class TraitDecl(
     val name: String,
@@ -90,7 +106,10 @@ public data class TraitDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = methods
+}
 
 public data class TypeAliasDecl(
     val name: String,
@@ -101,7 +120,10 @@ public data class TypeAliasDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = listOf(target)
+}
 
 public data class ModDecl(
     val name: String,
@@ -112,7 +134,10 @@ public data class ModDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = body ?: emptyList()
+}
 
 public data class UseDecl(
     val path: List<String>,
@@ -122,7 +147,10 @@ public data class UseDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class PubDecl(
     val inner: Decl,
@@ -131,4 +159,7 @@ public data class PubDecl(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Decl
+    override val docComment: String? = null,
+) : Decl {
+    override fun children(): List<AstNode> = listOf(inner)
+}

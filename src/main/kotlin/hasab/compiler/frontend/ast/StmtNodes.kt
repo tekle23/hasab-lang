@@ -1,6 +1,6 @@
 package hasab.compiler.frontend.ast
 
-// ── Statement AST Nodes ────────────────────────────────────────
+// -- Statement AST Nodes --
 
 public sealed interface Stmt : AstNode
 
@@ -11,7 +11,10 @@ public data class ExprStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = listOf(expression)
+}
 
 public data class ReturnStmt(
     val value: Expr?,
@@ -20,7 +23,10 @@ public data class ReturnStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = listOfNotNull(value)
+}
 
 public data class BreakStmt(
     override val fileName: String,
@@ -28,7 +34,10 @@ public data class BreakStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class ContinueStmt(
     override val fileName: String,
@@ -36,7 +45,10 @@ public data class ContinueStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class LetStmt(
     val name: String,
@@ -48,7 +60,10 @@ public data class LetStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = listOfNotNull(typeAnnotation, initializer)
+}
 
 public data class IfStmt(
     val condition: Expr,
@@ -59,7 +74,10 @@ public data class IfStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = listOf(condition, thenBranch) + listOfNotNull(elseBranch)
+}
 
 public data class WhileStmt(
     val condition: Expr,
@@ -69,7 +87,10 @@ public data class WhileStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = listOf(condition, body)
+}
 
 public data class ForStmt(
     val variable: String,
@@ -80,7 +101,10 @@ public data class ForStmt(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = listOf(iterable, body)
+}
 
 public data class Block(
     val statements: List<Stmt>,
@@ -89,4 +113,7 @@ public data class Block(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Stmt
+    override val docComment: String? = null,
+) : Stmt {
+    override fun children(): List<AstNode> = statements
+}

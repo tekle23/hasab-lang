@@ -1,6 +1,6 @@
 package hasab.compiler.frontend.ast
 
-// ── Type AST Nodes ─────────────────────────────────────────────
+// -- Type AST Nodes --
 
 public sealed interface TypeNode : AstNode
 
@@ -11,7 +11,10 @@ public data class IdentifierType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class QualifiedType(
     val path: List<String>,
@@ -20,7 +23,10 @@ public data class QualifiedType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class ArrayType(
     val elementType: TypeNode,
@@ -29,7 +35,10 @@ public data class ArrayType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = listOf(elementType)
+}
 
 public data class PointerType(
     val elementType: TypeNode,
@@ -38,7 +47,10 @@ public data class PointerType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = listOf(elementType)
+}
 
 public data class OptionalType(
     val elementType: TypeNode,
@@ -47,7 +59,10 @@ public data class OptionalType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = listOf(elementType)
+}
 
 public data class FunctionType(
     val parameterTypes: List<TypeNode>,
@@ -57,7 +72,10 @@ public data class FunctionType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = parameterTypes + returnType
+}
 
 public data class VoidType(
     override val fileName: String,
@@ -65,4 +83,7 @@ public data class VoidType(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : TypeNode
+    override val docComment: String? = null,
+) : TypeNode {
+    override fun children(): List<AstNode> = emptyList()
+}

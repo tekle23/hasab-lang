@@ -9,9 +9,12 @@ public sealed interface AstNode {
     public val fileName: String
     public val line: Int
     public val column: Int
+    public val docComment: String? get() = null
 
     public fun range(): SourceRange = SourceRange(
         SourcePosition(line, column, startOffset),
         SourcePosition(line, column, endOffset),
     )
+
+    public fun children(): List<AstNode>
 }

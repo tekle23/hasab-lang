@@ -1,6 +1,6 @@
 package hasab.compiler.frontend.ast
 
-// ── Expression AST Nodes ───────────────────────────────────────
+// -- Expression AST Nodes --
 
 public sealed interface Expr : AstNode
 
@@ -11,7 +11,10 @@ public data class IntegerLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class FloatLiteralExpr(
     val value: String,
@@ -20,7 +23,10 @@ public data class FloatLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class StringLiteralExpr(
     val value: String,
@@ -29,7 +35,10 @@ public data class StringLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class CharLiteralExpr(
     val value: String,
@@ -38,7 +47,10 @@ public data class CharLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class BoolLiteralExpr(
     val value: Boolean,
@@ -47,7 +59,10 @@ public data class BoolLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class NilLiteralExpr(
     override val fileName: String,
@@ -55,7 +70,10 @@ public data class NilLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class IdentifierExpr(
     val name: String,
@@ -64,7 +82,10 @@ public data class IdentifierExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = emptyList()
+}
 
 public data class BinaryExpr(
     val left: Expr,
@@ -75,7 +96,10 @@ public data class BinaryExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(left, right)
+}
 
 public data class UnaryExpr(
     val operator: String,
@@ -85,7 +109,10 @@ public data class UnaryExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(operand)
+}
 
 public data class CallExpr(
     val callee: Expr,
@@ -95,7 +122,10 @@ public data class CallExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(callee) + arguments
+}
 
 public data class IndexExpr(
     val callee: Expr,
@@ -105,7 +135,10 @@ public data class IndexExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(callee, index)
+}
 
 public data class FieldAccessExpr(
     val callee: Expr,
@@ -115,7 +148,10 @@ public data class FieldAccessExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(callee)
+}
 
 public data class ParenExpr(
     val inner: Expr,
@@ -124,7 +160,10 @@ public data class ParenExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(inner)
+}
 
 public data class ArrayLiteralExpr(
     val elements: List<Expr>,
@@ -133,7 +172,10 @@ public data class ArrayLiteralExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = elements
+}
 
 public data class ArrayInitExpr(
     val elementType: TypeNode?,
@@ -143,7 +185,10 @@ public data class ArrayInitExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOfNotNull(elementType, size)
+}
 
 public data class IfExpr(
     val condition: Expr,
@@ -154,7 +199,10 @@ public data class IfExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOfNotNull(condition, thenBranch, elseBranch)
+}
 
 public data class AssignmentExpr(
     val target: Expr,
@@ -164,7 +212,10 @@ public data class AssignmentExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(target, value)
+}
 
 public data class CompoundAssignmentExpr(
     val target: Expr,
@@ -175,4 +226,7 @@ public data class CompoundAssignmentExpr(
     override val column: Int,
     override val startOffset: Int,
     override val endOffset: Int,
-) : Expr
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(target, value)
+}
