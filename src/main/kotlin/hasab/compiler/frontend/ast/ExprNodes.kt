@@ -1,0 +1,178 @@
+package hasab.compiler.frontend.ast
+
+// ── Expression AST Nodes ───────────────────────────────────────
+
+public sealed interface Expr : AstNode
+
+public data class IntegerLiteralExpr(
+    val value: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class FloatLiteralExpr(
+    val value: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class StringLiteralExpr(
+    val value: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class CharLiteralExpr(
+    val value: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class BoolLiteralExpr(
+    val value: Boolean,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class NilLiteralExpr(
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class IdentifierExpr(
+    val name: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class BinaryExpr(
+    val left: Expr,
+    val operator: String,
+    val right: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class UnaryExpr(
+    val operator: String,
+    val operand: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class CallExpr(
+    val callee: Expr,
+    val arguments: List<Expr>,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class IndexExpr(
+    val callee: Expr,
+    val index: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class FieldAccessExpr(
+    val callee: Expr,
+    val fieldName: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class ParenExpr(
+    val inner: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class ArrayLiteralExpr(
+    val elements: List<Expr>,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class ArrayInitExpr(
+    val elementType: TypeNode?,
+    val size: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class IfExpr(
+    val condition: Expr,
+    val thenBranch: Expr,
+    val elseBranch: Expr?,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class AssignmentExpr(
+    val target: Expr,
+    val value: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
+
+public data class CompoundAssignmentExpr(
+    val target: Expr,
+    val operator: String,
+    val value: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+) : Expr
