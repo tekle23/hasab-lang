@@ -3,11 +3,16 @@ package hasab.cli.commands
 import hasab.cli.Command
 import hasab.cli.Terminal
 import hasab.cli.config.ProjectConfig
-import hasab.compiler.backend.HasabToJavaCompiler
+import hasab.compiler.CompilerPipeline
+import hasab.compiler.PipelineConfig
+import hasab.compiler.backend.BackendType
+import hasab.compiler.optimizer.OptProfile
 import java.io.File
 
 /**
  * Compiles all .has source files in the project.
+ *
+ * Pipeline: source → lex → parse → semantic → typecheck → HIR → optimize → Java → javac
  */
 public class BuildCommand : Command {
     override val name: String = "build"
@@ -16,62 +21,68 @@ public class BuildCommand : Command {
 
     override fun execute(args: List<String>): Int {
         val release = args.contains("--release")
+        val optProfile = if (release) OptProfile.Release else OptProfile.Debug
+
         val config = ProjectConfig.load()
+        val projectDir = File(".")
+        val sourceDir = File(config.sourceDir)
+        val outputDir = File(config.outputDir)
 
         Terminal.printBanner("Building: ${config.projectName} v${config.projectVersion}")
         if (release) Terminal.printInfo("Mode: Release (optimized)")
 
-        val srcDir = File(config.sourceDir)
-        if (!srcDir.exists()) {
+        if (!sourceDir.exists()) {
             Terminal.printError("Source directory '${config.sourceDir}' not found.")
             println("Run 'hasab new' to create a new project.")
             return 1
         }
 
-        val hasFiles = srcDir.walkTopDown().filter { it.extension == "has" }.toList()
-        if (hasFiles.isEmpty()) {
-            System.err.println("Error: No .has files found in '${config.sourceDir}'.")
+        val pipelineConfig = PipelineConfig(
+            backendType = BackendType.JAVA_SOURCE,
+            optProfile = optProfile,
+        )
+        val pipeline = CompilerPipeline(config = pipelineConfig)
+        val result = pipeline.compileProjectFromDirectory(projectDir, sourceDir, outputDir)
+
+        if (result.compileErrors.isNotEmpty()) {
+            for (err in result.compileErrors) {
+                val location = if (err.sourceLine > 0) "${err.sourceFile}:${err.sourceLine}:${err.sourceColumn}" else err.sourceFile
+                if (err.severity == "error") {
+                    Terminal.printError("error[$location]: ${err.message}")
+                } else {
+                    println("warning[$location]: ${err.message}")
+                }
+            }
+            println()
+            val errorCount = result.compileErrors.count { it.severity == "error" }
+            Terminal.printError("Build failed: $errorCount error(s)")
             return 1
         }
 
-        val buildDir = File(config.outputDir)
-        val classesDir = File(config.classesDir())
-        buildDir.mkdirs()
-        classesDir.mkdirs()
-
-        var successCount = 0
-        var errorCount = 0
-
-        for (file in hasFiles) {
-            val relativePath = file.relativeTo(srcDir).path
-            print("  Compiling $relativePath ... ")
-
-            val sourceCode = file.readText(Charsets.UTF_8)
-            val result = HasabToJavaCompiler.compile(sourceCode, relativePath)
-
-            if (result.hasErrors) {
-                println(Terminal.error("FAILED"))
-                for (diag in result.typeDiagnostics) {
-                    Terminal.printError("  ${diag.message}")
+        if (result.javaErrors.isNotEmpty()) {
+            for (err in result.javaErrors) {
+                val location = if (err.sourceLine > 0) {
+                    "${err.sourceFile}:${err.sourceLine}:${err.sourceColumn}"
+                } else if (err.generatedLine > 0) {
+                    "${err.generatedFile}:${err.generatedLine}"
+                } else {
+                    err.generatedFile
                 }
-                errorCount++
-            } else {
-                val javaFile = File(classesDir, relativePath.replace(".has", ".java"))
-                javaFile.parentFile?.mkdirs()
-                javaFile.writeText(result.javaSource, Charsets.UTF_8)
-                println(Terminal.success("OK"))
-                successCount++
+                if (err.severity == "error") {
+                    Terminal.printError("javac error[$location]: ${err.message}")
+                } else {
+                    println("javac warning[$location]: ${err.message}")
+                }
             }
+            println()
+            val errorCount = result.javaErrors.count { it.severity == "error" }
+            Terminal.printError("javac failed: $errorCount error(s)")
+            return 1
         }
 
         println()
-        if (errorCount == 0) {
-            Terminal.printSuccess("Build complete: $successCount file(s) compiled")
-            Terminal.printInfo("Output: ${config.outputJarPath()}")
-        } else {
-            Terminal.printError("Build failed: $errorCount error(s), $successCount succeeded")
-        }
-
-        return if (errorCount == 0) 0 else 1
+        Terminal.printSuccess("Build complete: ${result.modules.size} file(s) compiled")
+        Terminal.printInfo("Output: ${config.outputJarPath()}")
+        return 0
     }
 }

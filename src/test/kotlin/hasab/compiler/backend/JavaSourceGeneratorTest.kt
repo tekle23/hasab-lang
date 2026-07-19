@@ -57,7 +57,7 @@ class JavaSourceGeneratorTest {
     @Test
     fun `generate struct`() {
         val java = generate("struct Point { x: int, y: int }")
-        assertContains(java, "public class Point {")
+        assertContains(java, "public static class Point {")
         assertContains(java, "public int x;")
         assertContains(java, "public int y;")
         assertContains(java, "public Point() {}")
@@ -80,15 +80,15 @@ class JavaSourceGeneratorTest {
         assertContains(java, "public enum Color {")
         assertContains(java, "Red,")
         assertContains(java, "Green,")
-        assertContains(java, "Blue;")
+        assertContains(java, "Blue")
     }
 
     @Test
     fun `generate enum with fields`() {
         val java = generate("enum Result { Ok(int), Err(string) }")
-        assertContains(java, "public enum Result {")
-        assertContains(java, "Ok(int")
-        assertContains(java, "public static class Ok_Fields")
+        assertContains(java, "public static class Result {")
+        assertContains(java, "static Result Ok(")
+        assertContains(java, "static Result Err(")
     }
 
     // ── Control flow generation ────────────────────────────────────
@@ -185,7 +185,7 @@ class JavaSourceGeneratorTest {
     @Test
     fun `generate array literal`() {
         val java = generate("fn main() { let arr = [1, 2, 3]; }")
-        assertContains(java, "new Object[]{")
+        assertContains(java, "new int[]{")
     }
 
     @Test
@@ -220,7 +220,7 @@ class JavaSourceGeneratorTest {
     @Test
     fun `generate type alias`() {
         val java = generate("type IntList = [int]")
-        assertContains(java, "public static class IntList extends int[]")
+        assertContains(java, "// type alias IntList")
     }
 
     // ── Full pipeline ──────────────────────────────────────────────
@@ -232,7 +232,7 @@ class JavaSourceGeneratorTest {
             fn distance(p: Point) -> int { return p.x + p.y; }
         """.trimIndent())
         assertFalse(result.hasErrors)
-        assertContains(result.javaSource, "public class Point")
+        assertContains(result.javaSource, "public static class Point")
         assertContains(result.javaSource, "public static int distance")
     }
 

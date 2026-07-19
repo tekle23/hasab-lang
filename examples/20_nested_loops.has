@@ -1,0 +1,29 @@
+// 20 - Nested Loops and Counting
+// Demonstrates nested while loops and counter patterns.
+
+fn main() {
+    // Multiplication table 1-5
+    let mut row = 1;
+    while row <= 5 {
+        let mut col = 1;
+        while col <= 5 {
+            let product = row * col;
+            if product < 10 {
+                print(" ");
+            }
+            print(product);
+            print(" ");
+            col += 1;
+        }
+        println("");
+        row += 1;
+    }
+
+    // Countdown
+    let mut count = 5;
+    while count > 0 {
+        println(count);
+        count -= 1;
+    }
+    println("Liftoff!");
+}

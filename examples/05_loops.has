@@ -1,0 +1,38 @@
+// 05 - Loops
+// Demonstrates while loops, for-each loops, break, and continue.
+
+fn main() {
+    // While loop: count 1 to 5
+    let mut i = 1;
+    while i <= 5 {
+        println(i);
+        i += 1;
+    }
+
+    // For-each loop over array
+    let fruits = ["apple", "banana", "cherry"];
+    for (f: fruits) {
+        println(f);
+    }
+
+    // While with break
+    let mut n = 0;
+    while true {
+        if n == 3 {
+            break;
+        }
+        n += 1;
+    }
+    println(n);
+
+    // While with continue: print odd numbers only
+    let mut j = 1;
+    while j <= 10 {
+        if j % 2 == 0 {
+            j += 1;
+            continue;
+        }
+        println(j);
+        j += 1;
+    }
+}

@@ -133,7 +133,7 @@ public class SemanticModel private constructor(
      * Get all symbols of a given kind.
      */
     public fun symbolsOfKind(kind: SymbolKind): List<SemanticSymbol> {
-        return symbolTable.allVisibleSymbols().values.filter { it.kind == kind }
+        return symbolTable.allVisibleSymbols().values.filter { it.kind == kind && it.fileName != "<builtin>" }
     }
 
     /**

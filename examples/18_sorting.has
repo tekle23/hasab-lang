@@ -1,0 +1,40 @@
+// 18 - Sorting Algorithms
+// Demonstrates bubble sort using while loops and arrays.
+
+fn bubble_sort(mut arr: [int], n: int) {
+    let mut i = 0;
+    while i < n - 1 {
+        let mut j = 0;
+        while j < n - 1 - i {
+            if arr[j] > arr[j + 1] {
+                let temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+            j += 1;
+        }
+        i += 1;
+    }
+}
+
+fn main() {
+    let mut data = [64, 34, 25, 12, 22, 11, 90];
+    bubble_sort(data, 7);
+    let mut i = 0;
+    while i < 7 {
+        print(data[i]);
+        print(" ");
+        i += 1;
+    }
+    println("");
+
+    let mut data2 = [5, 1, 4, 2, 8];
+    bubble_sort(data2, 5);
+    i = 0;
+    while i < 5 {
+        print(data2[i]);
+        print(" ");
+        i += 1;
+    }
+    println("");
+}

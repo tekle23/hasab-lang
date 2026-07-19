@@ -1,0 +1,9 @@
+// 01 - Hello World
+// The simplest HASAB program: printing to stdout.
+
+fn main() {
+    println("Hello, World!");
+    println(42);
+    print("No newline");
+    println(" here");
+}

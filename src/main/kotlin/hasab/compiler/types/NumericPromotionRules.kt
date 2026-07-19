@@ -45,6 +45,7 @@ public object NumericPromotionRules {
         "&&", "||" -> if (left == BoolType && right == BoolType) BoolType else null
         "&", "|", "^", "<<", ">>" -> if (left == IntType && right == IntType) IntType else null
         ".." -> if (left == IntType && right == IntType) ArrayType(IntType) else null
+        "..=" -> if (left == IntType && right == IntType) ArrayType(IntType) else null
         else -> null
     }
 

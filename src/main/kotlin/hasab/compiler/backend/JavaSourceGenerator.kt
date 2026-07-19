@@ -13,26 +13,150 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
 
     private lateinit var sb: StringBuilder
     private var indent = 0
+    private var sourceMap: SourceMap? = null
+    private var generatedFile: String = ""
+    private var currentLine: Int = 1
+    private var typeEnv: hasab.compiler.types.TypeEnvironment = hasab.compiler.types.TypeEnvironment.root()
+    private var typedModel: hasab.compiler.types.TypedSemanticModel = hasab.compiler.types.TypedSemanticModel.empty()
+    private val implMethodNames = mutableSetOf<String>()
 
-    public fun generate(module: Module): String {
+    public fun generate(module: Module, className: String = "Main"): String {
         sb = StringBuilder()
         indent = 0
+        currentLine = 1
 
         for (diagnostic in typeCheckDiagnostics) {
             if (diagnostic.severity == DiagnosticSeverity.ERROR) {
                 sb.appendLine("// TYPE ERROR: ${diagnostic.message}")
+                currentLine++
             }
         }
 
+        emitLine("import java.util.Objects;")
+        emitLine("")
+        emitLine("public class $className {")
+        indent++
         for (decl in module.declarations) {
             generateDeclaration(decl)
         }
+        emitBuiltinHelpers()
+        indent--
+        emitIndent()
+        emitLine("}")
 
         return sb.toString()
     }
 
+    public fun generate(
+        module: Module,
+        typeCheckResult: hasab.compiler.types.TypeCheckResult,
+        sourceMap: SourceMap,
+        sourceFile: String,
+        generatedFileName: String? = null,
+    ): String {
+        this.sourceMap = sourceMap
+        this.generatedFile = generatedFileName ?: sourceFile.replace(".has", ".java")
+        this.typeEnv = typeCheckResult.environment
+        this.typedModel = typeCheckResult.typedModel
+        val className = sourceFile
+            .removeSuffix(".has")
+            .removeSuffix(".hasab")
+            .substringAfterLast("/")
+            .substringAfterLast("\\")
+            .replace(Regex("[^A-Za-z0-9_]"), "_")
+            .let { if (it.isEmpty() || it[0].isDigit()) "_$it" else it }
+
+        sb = StringBuilder()
+        indent = 0
+        currentLine = 1
+
+        for (diagnostic in typeCheckResult.diagnostics) {
+            if (diagnostic.severity == DiagnosticSeverity.ERROR) {
+                sb.appendLine("// TYPE ERROR: ${diagnostic.message}")
+                currentLine++
+            }
+        }
+
+        emitLine("import java.util.Objects;")
+        emitLine("")
+        emitLine("public class $className {")
+        indent++
+        for (decl in module.declarations) {
+            generateDeclaration(decl)
+        }
+        emitBuiltinHelpers()
+        indent--
+        emitIndent()
+        emitLine("}")
+
+        this.sourceMap = null
+        return sb.toString()
+    }
+
+    private fun emitBuiltinHelpers() {
+        emitIndent()
+        emitLine("private static int len(Object obj) {")
+        indent++
+        emitIndent()
+        emitLine("if (obj instanceof Object[]) return ((Object[]) obj).length;")
+        emitIndent()
+        emitLine("if (obj instanceof String) return ((String) obj).length();")
+        emitIndent()
+        emitLine("throw new UnsupportedOperationException(\"len() not supported for \" + obj.getClass());")
+        indent--
+        emitIndent()
+        emitLine("}")
+        emitIndent()
+        emitLine("private static int abs(int x) { return Math.abs(x); }")
+        emitIndent()
+        emitLine("private static double sqrt(double x) { return Math.sqrt(x); }")
+        emitIndent()
+        emitLine("private static double pow(double base, double exp) { return Math.pow(base, exp); }")
+        emitIndent()
+        emitLine("private static int min(int a, int b) { return Math.min(a, b); }")
+        emitIndent()
+        emitLine("private static int max(int a, int b) { return Math.max(a, b); }")
+        emitIndent()
+        emitLine("private static String str(Object obj) { return String.valueOf(obj); }")
+        emitIndent()
+        emitLine("private static void print(Object obj) { System.out.print(obj); }")
+        emitIndent()
+        emitLine("private static int now() { return (int) System.currentTimeMillis(); }")
+    }
+
+    private fun emitWithSourceMap(node: AstNode, block: () -> Unit) {
+        val sm = sourceMap
+        if (sm != null) {
+            val startLine = currentLine
+            block()
+            val endLine = currentLine
+            sm.record(
+                generatedFile = generatedFile,
+                generatedLine = startLine,
+                sourceFile = node.fileName,
+                sourceLine = node.line,
+                sourceCol = node.column,
+                sourceEndLine = node.line,
+                sourceEndCol = node.column,
+            )
+            if (endLine > startLine) {
+                for (line in (startLine + 1)..endLine) {
+                    sm.record(
+                        generatedFile = generatedFile,
+                        generatedLine = line,
+                        sourceFile = node.fileName,
+                        sourceLine = node.line,
+                        sourceCol = node.column,
+                    )
+                }
+            }
+        } else {
+            block()
+        }
+    }
+
     private fun emit(s: String) { sb.append(s) }
-    private fun emitLine(s: String) { sb.appendLine(s) }
+    private fun emitLine(s: String) { sb.appendLine(s); currentLine++ }
     private fun emitIndent() { repeat(indent) { sb.append("    ") } }
 
     private fun captureExpr(block: () -> Unit): String {
@@ -58,159 +182,146 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
         }
     }
 
-    private fun generateFnDecl(decl: FnDecl, isMethod: Boolean = false) {
-        val returnType = if (decl.returnType != null) resolveTypeNode(decl.returnType) else VoidType
-        val javaReturnType = TypeMapper.toJavaType(returnType)
+    private fun generateFnDecl(decl: FnDecl, isMethod: Boolean = false, selfTypeName: String? = null) {
+        emitWithSourceMap(decl) {
+            val returnType = if (decl.returnType != null) resolveTypeNode(decl.returnType) else VoidType
+            val javaReturnType = TypeMapper.toJavaType(returnType)
 
-        emitIndent()
-        emit(if (isMethod) "public " else "public static ")
-        emit("$javaReturnType ${decl.name}(")
-
-        val params = decl.parameters.filter { it.name != "self" }
-        emit(params.joinToString(", ") { fp ->
-            val pt = if (fp.type != null) resolveTypeNode(fp.type) else VoidType
-            "${TypeMapper.toJavaType(pt)} ${sanitizeName(fp.name)}"
-        })
-        emit(")")
-
-        if (decl.body != null) {
-            emitLine(" {")
-            indent++
-            generateBlock(decl.body)
-            indent--
             emitIndent()
-            emitLine("}")
-        } else {
-            emitLine(";")
-        }
-        emitLine("")
-    }
+            emit(if (isMethod) "public " else "public static ")
+            emit("$javaReturnType ${sanitizeName(decl.name)}(")
 
-    private fun generateStructDecl(decl: StructDecl) {
-        emitIndent()
-        emitLine("public class ${decl.name} {")
-        indent++
-
-        for (field in decl.fields) {
-            val ft = resolveTypeNode(field.type)
-            emitIndent()
-            emitLine("public ${TypeMapper.toJavaType(ft)} ${sanitizeName(field.name)};")
-        }
-
-        if (decl.fields.isNotEmpty()) {
-            emitLine("")
-            emitIndent()
-            emitLine("public ${decl.name}() {}")
-            emitLine("")
-
-            val constructorParams = decl.fields.joinToString(", ") { field ->
-                val ft = resolveTypeNode(field.type)
-                "${TypeMapper.toJavaType(ft)} ${sanitizeName(field.name)}"
-            }
-            emitIndent()
-            emitLine("public ${decl.name}($constructorParams) {")
-            indent++
-            for (field in decl.fields) {
-                emitIndent()
-                emitLine("this.${sanitizeName(field.name)} = ${sanitizeName(field.name)};")
-            }
-            indent--
-            emitIndent()
-            emitLine("}")
-        }
-
-        indent--
-        emitIndent()
-        emitLine("}")
-        emitLine("")
-    }
-
-    private fun generateEnumDecl(decl: EnumDecl) {
-        emitIndent()
-        emitLine("public enum ${decl.name} {")
-        indent++
-
-        val variantEntries = decl.variants.map { variant ->
-            if (variant.fields.isEmpty()) {
-                variant.name
+            val hasSelf = decl.parameters.any { it.name == "self" }
+            val params = if (hasSelf && selfTypeName != null) {
+                decl.parameters
             } else {
-                val fieldParams = variant.fields.joinToString(", ") { f ->
-                    "${TypeMapper.toJavaType(resolveTypeNode(f.type))} ${sanitizeName(f.name)}"
-                }
-                "${variant.name}($fieldParams)"
+                decl.parameters.filter { it.name != "self" }
             }
-        }
-        emit(variantEntries.joinToString(",\n"))
-        emitLine(";")
-        emitLine("")
-
-        for (variant in decl.variants) {
-            if (variant.fields.isNotEmpty()) {
-                val fieldParams = variant.fields.joinToString(", ") { f ->
-                    "${TypeMapper.toJavaType(resolveTypeNode(f.type))} ${sanitizeName(f.name)}"
+            emit(params.joinToString(", ") { fp ->
+                val pt = if (fp.name == "self" && selfTypeName != null) {
+                    typeEnv.lookup(selfTypeName) ?: VoidType
+                } else if (fp.type != null) {
+                    resolveTypeNode(fp.type)
+                } else {
+                    VoidType
                 }
-                emitIndent()
-                emitLine("private final ${variant.name}_Fields ${variant.name.lowercase()}_fields;")
-                emitIndent()
-                emitLine("${variant.name}($fieldParams) {")
+                "${TypeMapper.toJavaType(pt)} ${sanitizeName(fp.name)}"
+            })
+            emit(")")
+
+            if (decl.body != null) {
+                emitLine(" {")
                 indent++
-                emitIndent()
-                emitLine("this.${variant.name.lowercase()}_fields = new ${variant.name}_Fields(${
-                    variant.fields.joinToString(", ") { sanitizeName(it.name) }
-                });")
+                generateBlock(decl.body)
                 indent--
                 emitIndent()
                 emitLine("}")
-                emitLine("")
+            } else {
+                emitLine(";")
             }
+            emitLine("")
         }
+    }
 
-        for (variant in decl.variants) {
-            if (variant.fields.isNotEmpty()) {
+    private fun generateStructDecl(decl: StructDecl) {
+        emitWithSourceMap(decl) {
+            emitIndent()
+            emitLine("public static class ${decl.name} {")
+            indent++
+
+            for (field in decl.fields) {
+                val ft = resolveTypeNode(field.type)
                 emitIndent()
-                emitLine("public static class ${variant.name}_Fields {")
-                indent++
-                for (field in variant.fields) {
-                    emitIndent()
-                    emitLine("public final ${TypeMapper.toJavaType(resolveTypeNode(field.type))} ${sanitizeName(field.name)};")
-                }
-                val fp = variant.fields.joinToString(", ") { f ->
-                    "${TypeMapper.toJavaType(resolveTypeNode(f.type))} ${sanitizeName(f.name)}"
+                emitLine("public ${TypeMapper.toJavaType(ft)} ${sanitizeName(field.name)};")
+            }
+
+            if (decl.fields.isNotEmpty()) {
+                emitLine("")
+                emitIndent()
+                emitLine("public ${decl.name}() {}")
+                emitLine("")
+
+                val constructorParams = decl.fields.joinToString(", ") { field ->
+                    val ft = resolveTypeNode(field.type)
+                    "${TypeMapper.toJavaType(ft)} ${sanitizeName(field.name)}"
                 }
                 emitIndent()
-                emitLine("public ${variant.name}_Fields($fp) {")
+                emitLine("public ${decl.name}($constructorParams) {")
                 indent++
-                for (field in variant.fields) {
+                for (field in decl.fields) {
                     emitIndent()
                     emitLine("this.${sanitizeName(field.name)} = ${sanitizeName(field.name)};")
                 }
                 indent--
                 emitIndent()
                 emitLine("}")
+            }
+
+            indent--
+            emitIndent()
+            emitLine("}")
+            emitLine("")
+        }
+    }
+
+    private fun generateEnumDecl(decl: EnumDecl) {
+        emitWithSourceMap(decl) {
+            val hasDataVariants = decl.variants.any { it.fields.isNotEmpty() }
+
+            if (!hasDataVariants) {
+                emitIndent()
+                emitLine("public enum ${decl.name} {")
+                indent++
+                emit(decl.variants.joinToString(", ") { it.name })
+                emitLine(";")
+                indent--
+                emitIndent()
+                emitLine("}")
+                emitLine("")
+            } else {
+                emitIndent()
+                emitLine("public static class ${decl.name} {")
+                indent++
+                emitIndent()
+                emitLine("public final String _variant;")
+                indent--
+                emitLine("")
+
+                emitIndent()
+                emitLine("private ${decl.name}(String variant) { this._variant = variant; }")
+                emitLine("")
+
+                for (variant in decl.variants) {
+                    val params = variant.fields.joinToString(", ") { f ->
+                        "${TypeMapper.toJavaType(resolveTypeNode(f.type))} ${sanitizeName(f.name)}"
+                    }
+                    emitIndent()
+                    emitLine("public static ${decl.name} ${variant.name}($params) { return new ${decl.name}(\"${variant.name}\"); }")
+                }
+
                 indent--
                 emitIndent()
                 emitLine("}")
                 emitLine("")
             }
         }
-
-        indent--
-        emitIndent()
-        emitLine("}")
-        emitLine("")
     }
 
     private fun generateImplDecl(decl: ImplDecl) {
+        val structName = when (decl.targetType) {
+            is IdentifierType -> decl.targetType.name
+            else -> null
+        }
         for (method in decl.methods) {
-            generateFnDecl(method, isMethod = true)
+            implMethodNames.add(method.name)
+            generateFnDecl(method, isMethod = false, selfTypeName = structName)
         }
     }
 
     private fun generateTypeAlias(decl: TypeAliasDecl) {
         val target = resolveTypeNode(decl.target)
         emitIndent()
-        emitLine("public static class ${decl.name} extends ${TypeMapper.toJavaType(target)} {}")
-        emitLine("")
+        emitLine("// type alias ${decl.name} = ${TypeMapper.toJavaType(target)}")
     }
 
     private fun generateModDecl(decl: ModDecl) {
@@ -336,9 +447,26 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             is NilLiteralExpr -> emit("null")
             is IdentifierExpr -> emit(sanitizeName(expr.name))
             is BinaryExpr -> {
-                generateExpression(expr.left)
-                emit(" ${expr.operator} ")
-                generateExpression(expr.right)
+                if (expr.operator == ".." || expr.operator == "..=") {
+                    val typedType = typedModel.typeOf(expr)
+                    if (typedType is ArrayType && typedType.elementType == IntType) {
+                        emit("new int[]{")
+                        emit(captureExpr { generateExpression(expr.left) })
+                        emit(", ")
+                        emit(captureExpr { generateExpression(expr.right) })
+                        emit("}")
+                    } else {
+                        emit("new Object[]{")
+                        emit(captureExpr { generateExpression(expr.left) })
+                        emit(", ")
+                        emit(captureExpr { generateExpression(expr.right) })
+                        emit("}")
+                    }
+                } else {
+                    generateExpression(expr.left)
+                    emit(" ${expr.operator} ")
+                    generateExpression(expr.right)
+                }
             }
             is UnaryExpr -> {
                 emit(expr.operator)
@@ -361,7 +489,13 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
                 emit(")")
             }
             is ArrayLiteralExpr -> {
-                emit("new Object[]{")
+                val typedType = typedModel.typeOf(expr)
+                if (typedType is ArrayType) {
+                    emit("new ${TypeMapper.toJavaType(typedType.elementType)}[]{")
+                } else {
+                    val elemType = if (expr.elements.isNotEmpty()) inferExpressionType(expr.elements[0]) else StructType("Object", emptyList())
+                    emit("new ${TypeMapper.toJavaType(elemType)}[]{")
+                }
                 emit(expr.elements.joinToString(", ") { captureExpr { generateExpression(it) } })
                 emit("}")
             }
@@ -414,10 +548,43 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             return
         }
 
+        if (expr.callee is IdentifierExpr && (expr.callee as IdentifierExpr).name == "print") {
+            emit("System.out.print(")
+            emit(expr.arguments.joinToString(", ") { captureExpr { generateExpression(it) } })
+            emit(")")
+            return
+        }
+
+        if (expr.callee is IdentifierExpr) {
+            val name = (expr.callee as IdentifierExpr).name
+            if (isKnownStruct(name)) {
+                emit("new $name(")
+                emit(expr.arguments.joinToString(", ") { captureExpr { generateExpression(it) } })
+                emit(")")
+                return
+            }
+        }
+
+        if (expr.callee is FieldAccessExpr && (expr.callee as FieldAccessExpr).fieldName in implMethodNames) {
+            val fae = expr.callee as FieldAccessExpr
+            emit("${sanitizeName(fae.fieldName)}(")
+            emit(captureExpr { generateExpression(fae.callee) })
+            if (expr.arguments.isNotEmpty()) {
+                emit(", ")
+                emit(expr.arguments.joinToString(", ") { captureExpr { generateExpression(it) } })
+            }
+            emit(")")
+            return
+        }
+
         generateExpression(expr.callee)
         emit("(")
         emit(expr.arguments.joinToString(", ") { captureExpr { generateExpression(it) } })
         emit(")")
+    }
+
+    private fun isKnownStruct(name: String): Boolean {
+        return typeEnv.lookup(name) is hasab.compiler.types.StructType
     }
 
     // ── Helpers ──────────────────────────────────────────────────
@@ -445,7 +612,7 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
 
     private fun resolveTypeNode(node: TypeNode): Type {
         return when (node) {
-            is IdentifierType -> TypeEnvironment.root().lookup(node.name) ?: StructType(node.name, emptyList())
+            is IdentifierType -> typeEnv.lookup(node.name) ?: StructType(node.name, emptyList())
             is QualifiedType -> StructType(node.path.joinToString("::"), emptyList())
             is AstArrayType -> ArrayType(resolveTypeNode(node.elementType))
             is AstPointerType -> PointerType(resolveTypeNode(node.elementType))
@@ -461,6 +628,8 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
     }
 
     private fun inferExpressionType(expr: Expr): Type {
+        val typedType = typedModel.typeOf(expr)
+        if (typedType != null) return typedType
         val objectType = StructType("Object", emptyList())
         return when (expr) {
             is IntegerLiteralExpr -> IntType
@@ -469,7 +638,7 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             is CharLiteralExpr -> CharType
             is BoolLiteralExpr -> BoolType
             is NilLiteralExpr -> NilLiteralType
-            is IdentifierExpr -> objectType
+            is IdentifierExpr -> typeEnv.lookup(expr.name) ?: objectType
             is BinaryExpr -> {
                 val left = inferExpressionType(expr.left)
                 when (expr.operator) {
@@ -486,6 +655,19 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
                 val thenType = inferExpressionType(expr.thenBranch)
                 if (expr.elseBranch != null) inferExpressionType(expr.elseBranch)
                 else OptionalType(thenType)
+            }
+            is IndexExpr -> {
+                val calleeType = inferExpressionType(expr.callee)
+                if (calleeType is ArrayType) calleeType.elementType
+                else objectType
+            }
+            is CallExpr -> {
+                val callee = expr.callee
+                if (callee is IdentifierExpr) {
+                    val fnType = typeEnv.lookup(callee.name)
+                    if (fnType is FunctionType) fnType.returnType
+                    else objectType
+                } else objectType
             }
             else -> objectType
         }

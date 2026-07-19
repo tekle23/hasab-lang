@@ -1,0 +1,39 @@
+// 04 - Control Flow
+// Demonstrates if/else statements and comparisons.
+
+fn main() {
+    let age = 25;
+    if age >= 18 {
+        println("Adult");
+    } else {
+        println("Minor");
+    }
+
+    let score = 85;
+    if score >= 90 {
+        println("Grade: A");
+    } else {
+        if score >= 80 {
+            println("Grade: B");
+        } else {
+            if score >= 70 {
+                println("Grade: C");
+            } else {
+                println("Grade: F");
+            }
+        }
+    }
+
+    let x = 42;
+    if x > 0 {
+        println("positive");
+    } else {
+        println("non-positive");
+    }
+
+    println(10 < 20);
+    println(10 == 10);
+    println(10 != 20);
+    println(10 >= 5);
+    println(10 <= 10);
+}

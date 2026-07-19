@@ -1,0 +1,30 @@
+// 03 - Arithmetic Operations
+// Demonstrates integer and float arithmetic, compound assignment, and built-in math functions.
+
+fn main() {
+    let a = 17;
+    let b = 5;
+    println(a + b);
+    println(a - b);
+    println(a * b);
+    println(a / b);
+    println(a % b);
+
+    let mut x = 10;
+    x += 5;
+    println(x);
+    x -= 3;
+    println(x);
+    x *= 2;
+    println(x);
+
+    println(abs(-42));
+    println(min(3, 7));
+    println(max(3, 7));
+
+    let f = 4.0;
+    println(sqrt(f));
+    println(pow(2.0, 10.0));
+    println(str(42));
+    println(now());
+}

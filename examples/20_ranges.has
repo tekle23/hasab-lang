@@ -1,0 +1,35 @@
+// 20 - Range Operations
+// Demonstrates range expressions and range-based iteration.
+
+fn main() {
+    // Range expressions
+    let exclusive_range = 0..5;
+    let inclusive_range = 0..=5;
+    println("Exclusive range (0..5): ");
+    println(exclusive_range);
+    println("Inclusive range (0..=5): ");
+    println(inclusive_range);
+
+    // Range in conditions
+    let x = 3;
+    if x >= 0 && x < 10 {
+        println("x is in range [0, 10)");
+    }
+
+    // Manual range iteration with while
+    println("Iterating 0..5:");
+    let mut i = 0;
+    while i < 5 {
+        println(i);
+        i += 1;
+    }
+
+    // Range-based counting
+    println("Countdown from 5:");
+    let mut count = 5;
+    while count > 0 {
+        println(count);
+        count -= 1;
+    }
+    println("Liftoff!");
+}

@@ -1,0 +1,48 @@
+// 17 - Recursion and Algorithms
+// Demonstrates recursive functions: fibonacci, power, GCD.
+
+fn fibonacci(n: int) -> int {
+    if n <= 0 {
+        return 0;
+    }
+    if n == 1 {
+        return 1;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fn power(base: int, exp: int) -> int {
+    if exp == 0 {
+        return 1;
+    }
+    if exp % 2 == 0 {
+        let half = power(base, exp / 2);
+        return half * half;
+    }
+    return base * power(base, exp - 1);
+}
+
+fn gcd(a: int, b: int) -> int {
+    if b == 0 {
+        return a;
+    }
+    return gcd(b, a % b);
+}
+
+fn sum_digits(val: int) -> int {
+    if val < 10 {
+        return val;
+    }
+    return val % 10 + sum_digits(val / 10);
+}
+
+fn main() {
+    let mut i = 0;
+    while i < 10 {
+        println(fibonacci(i));
+        i += 1;
+    }
+    println(power(2, 10));
+    println(gcd(48, 18));
+    println(sum_digits(12345));
+}

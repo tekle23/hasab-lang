@@ -1,0 +1,33 @@
+// 13 - Built-in Functions
+// Demonstrates all built-in functions.
+
+fn main() {
+    println("Hello with newline");
+    print("Hello ");
+    print("without ");
+    print("newline\n");
+
+    let arr = [1, 2, 3, 4, 5];
+    println(len(arr));
+    println(len("hello"));
+
+    println(abs(-10));
+    println(abs(10));
+
+    let s = 9.0;
+    println(sqrt(s));
+
+    println(min(10, 20));
+    println(max(10, 20));
+
+    let base = 2.0;
+    let exp = 10.0;
+    println(pow(base, exp));
+
+    let num = 42;
+    let result = str(num);
+    println(result);
+
+    let t = now();
+    println(t);
+}

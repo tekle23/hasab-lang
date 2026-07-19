@@ -18,21 +18,26 @@ public object FunctionCallChecker {
     ): Type {
         if (calleeType is UnknownType) return UnknownType
 
-        if (calleeType !is FunctionType) {
+        // Struct names act as constructors
+        val fnType = if (calleeType is FunctionType) {
+            calleeType
+        } else if (calleeType is StructType) {
+            FunctionType(calleeType.fields.map { it.type }, calleeType)
+        } else {
             diagnostics.report(
                 TypeDiagnosticCode.NOT_CALLABLE,
                 "Expression of type '${calleeType.displayName}' is not callable",
                 expr.range(),
                 expr.fileName,
-                hint = "Only functions can be called",
+                hint = "Only functions and structs can be called",
             )
             return UnknownType
         }
 
-        checkArgumentCount(expr, calleeType, diagnostics)
-        checkArgumentTypes(expr, calleeType, diagnostics)
+        checkArgumentCount(expr, fnType, diagnostics)
+        checkArgumentTypes(expr, fnType, diagnostics)
 
-        return calleeType.returnType
+        return fnType.returnType
     }
 
     /**
@@ -97,6 +102,7 @@ public object FunctionCallChecker {
     private fun areTypesCompatible(source: Type, target: Type): Boolean {
         if (source.isAssignableTo(target)) return true
         if (NumericPromotionRules.canPromote(source, target)) return true
+        if (target is TypeVariable) return true
         if (target is OptionalType) return source is NilLiteralType || source.isAssignableTo(target.elementType)
         if (source is OptionalType) return source.elementType.isAssignableTo(target)
         return false

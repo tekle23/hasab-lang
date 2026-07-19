@@ -1,0 +1,30 @@
+// 11 - Impl Blocks
+// Demonstrates struct methods using impl blocks.
+
+struct Point {
+    x: float,
+    y: float,
+}
+
+impl Point {
+    fn new(px: float, py: float) -> Point {
+        return Point(px, py);
+    }
+
+    fn distance(self, other: Point) -> float {
+        let dx = self.x - other.x;
+        let dy = self.y - other.y;
+        return sqrt(dx * dx + dy * dy);
+    }
+
+    fn length(self) -> float {
+        return sqrt(self.x * self.x + self.y * self.y);
+    }
+}
+
+fn main() {
+    let p1 = Point(3.0, 4.0);
+    let p2 = Point(0.0, 0.0);
+    println(p1.length());
+    println(p1.distance(p2));
+}

@@ -1,0 +1,33 @@
+// 07 - Structs
+// Demonstrates struct definition, construction, and field access.
+
+struct Point {
+    x: int,
+    y: int,
+}
+
+struct Counter {
+    value: int,
+}
+
+struct Config {
+    host: string,
+    port: int,
+    verbose: bool,
+}
+
+fn main() {
+    let p = Point(3, 4);
+    println(p.x);
+    println(p.y);
+
+    let mut c = Counter(0);
+    c.value += 1;
+    c.value += 1;
+    println(c.value);
+
+    let config = Config("localhost", 8080, true);
+    println(config.host);
+    println(config.port);
+    println(config.verbose);
+}

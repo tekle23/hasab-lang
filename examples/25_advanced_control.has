@@ -1,0 +1,59 @@
+// 25 - Day of Week Processing
+// Demonstrates complex nested control flow.
+
+fn day_name(day: int) -> string {
+    if day == 1 {
+        return "Monday";
+    }
+    if day == 2 {
+        return "Tuesday";
+    }
+    if day == 3 {
+        return "Wednesday";
+    }
+    if day == 4 {
+        return "Thursday";
+    }
+    if day == 5 {
+        return "Friday";
+    }
+    if day == 6 {
+        return "Saturday";
+    }
+    return "Sunday";
+}
+
+fn main() {
+    let mut day = 1;
+    while day <= 7 {
+        let name = day_name(day);
+        print(name);
+        if day == 6 {
+            println(" (Weekend)");
+        } else {
+            if day == 7 {
+                println(" (Weekend)");
+            } else {
+                println(" (Weekday)");
+            }
+        }
+        day += 1;
+    }
+
+    // Classify numbers
+    let mut num = -3;
+    while num <= 3 {
+        if num > 0 {
+            print(num);
+            println(" is positive");
+        } else {
+            if num < 0 {
+                print(num);
+                println(" is negative");
+            } else {
+                println("zero");
+            }
+        }
+        num += 1;
+    }
+}

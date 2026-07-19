@@ -1,0 +1,26 @@
+// 15 - String Operations
+// Demonstrates string manipulation with concatenation.
+
+fn main() {
+    let first = "Hello";
+    let second = "World";
+    let greeting = first + ", " + second + "!";
+    println(greeting);
+
+    let text = "Ethiopia";
+    println(len(text));
+
+    let lang = "HASAB";
+    if lang == "HASAB" {
+        println("Programming in HASAB");
+    }
+
+    let a = 'A';
+    let backslash = '\\';
+    print(a);
+    print(" ");
+    println(backslash);
+
+    let empty = "";
+    println(len(empty));
+}

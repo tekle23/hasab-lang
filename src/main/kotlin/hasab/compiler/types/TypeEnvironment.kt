@@ -24,10 +24,19 @@ public class TypeEnvironment private constructor(
             env = env.define("bool", BoolType)
             env = env.define("char", CharType)
             env = env.define("void", VoidType)
-            // Built-in functions
-            env = env.define("println", FunctionType(listOf(TypeVariable(0)), VoidType))
-            env = env.define("print", FunctionType(listOf(TypeVariable(1)), VoidType))
-            env = env.define("len", FunctionType(listOf(TypeVariable(2)), IntType))
+            // Built-in I/O functions
+            val anyParam = TypeVariable(0)
+            env = env.define("println", FunctionType(listOf(anyParam), VoidType))
+            env = env.define("print", FunctionType(listOf(anyParam), VoidType))
+            // Built-in math/conversion functions
+            env = env.define("len", FunctionType(listOf(TypeVariable(1)), IntType))
+            env = env.define("abs", FunctionType(listOf(IntType), IntType))
+            env = env.define("sqrt", FunctionType(listOf(FloatType), FloatType))
+            env = env.define("pow", FunctionType(listOf(FloatType, FloatType), FloatType))
+            env = env.define("min", FunctionType(listOf(IntType, IntType), IntType))
+            env = env.define("max", FunctionType(listOf(IntType, IntType), IntType))
+            env = env.define("str", FunctionType(listOf(TypeVariable(2)), StringType))
+            env = env.define("now", FunctionType(listOf(), IntType))
             return env
         }
     }

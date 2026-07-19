@@ -1,0 +1,24 @@
+// 16 - Nested Structures
+// Demonstrates nested structs and complex data modeling.
+
+struct Address {
+    street: string,
+    city: string,
+    zip: int,
+}
+
+struct Person {
+    name: string,
+    age: int,
+    address: Address,
+}
+
+fn main() {
+    let addr = Address("123 Main St", "Addis Ababa", 1000);
+    let alice = Person("Alice", 30, addr);
+    println(alice.name);
+    println(alice.age);
+    println(alice.address.street);
+    println(alice.address.city);
+    println(alice.address.zip);
+}

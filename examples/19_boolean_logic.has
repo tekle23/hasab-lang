@@ -1,0 +1,29 @@
+// 19 - Boolean Logic and Bitwise Operations
+// Demonstrates logical operators, bitwise operations.
+
+fn main() {
+    let a = true;
+    let b = false;
+    println(a && b);
+    println(a || b);
+    println(!b);
+
+    let x = 10;
+    if x > 5 && x < 20 {
+        println("x is between 5 and 20");
+    }
+    if x < 5 || x > 15 {
+        println("x is outside 5-15");
+    } else {
+        println("x is inside 5-15");
+    }
+
+    let m = 12;
+    let n = 10;
+    println(m & n);
+    println(m | n);
+    println(m ^ n);
+    println(~0);
+    println(1 << 4);
+    println(16 >> 2);
+}

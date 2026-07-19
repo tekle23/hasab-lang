@@ -1,0 +1,14 @@
+// 12 - Traits
+// Demonstrates trait declaration (interfaces) as abstract contracts.
+
+trait Printable {
+    fn to_string(self) -> string;
+}
+
+trait Comparable {
+    fn compare(self, other: int) -> int;
+}
+
+fn main() {
+    println("Trait declarations are supported");
+}

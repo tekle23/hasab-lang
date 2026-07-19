@@ -313,6 +313,7 @@ public class DeclarationParser(
         val nameToken = stream.expect(TokenType.Identifier)
         stream.expect(TokenType.Assign)
         val target = typeParser.parseType()
+        if (stream.isAt(TokenType.Semicolon)) stream.advance()
 
         return TypeAliasDecl(
             name = nameToken.lexeme,

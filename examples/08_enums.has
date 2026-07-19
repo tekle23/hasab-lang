@@ -1,0 +1,34 @@
+// 08 - Enums
+// Demonstrates enum definition, variants with and without data.
+
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+enum Result {
+    Ok(int),
+    Err(string),
+}
+
+enum Shape {
+    Circle(float),
+    Rectangle(float, float),
+}
+
+fn main() {
+    let dir = Direction.North;
+    println(dir);
+
+    let success = Result.Ok(42);
+    let failure = Result.Err("something went wrong");
+    println(success);
+    println(failure);
+
+    let circle = Shape.Circle(5.0);
+    let rect = Shape.Rectangle(3.0, 4.0);
+    println(circle);
+    println(rect);
+}

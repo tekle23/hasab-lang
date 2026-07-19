@@ -1,0 +1,38 @@
+// 06 - Functions
+// Demonstrates function declarations, parameters, return values.
+
+fn add(x: int, y: int) -> int {
+    return x + y;
+}
+
+fn multiply(p: int, q: int) -> int {
+    return p * q;
+}
+
+fn greet(name: string) {
+    println("Hello, " + name + "!");
+}
+
+fn factorial(val: int) -> int {
+    if val <= 1 {
+        return 1;
+    }
+    return val * factorial(val - 1);
+}
+
+fn is_even(num: int) -> bool {
+    if num % 2 == 0 {
+        return true;
+    }
+    return false;
+}
+
+fn main() {
+    println(add(3, 4));
+    println(multiply(5, 6));
+    greet("HASAB Developer");
+    println(factorial(5));
+    println(factorial(10));
+    println(is_even(4));
+    println(is_even(7));
+}

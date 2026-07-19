@@ -112,6 +112,7 @@ public class SymbolResolver(
             }
             is ForStmt -> {
                 resolveExpr(stmt.iterable)
+                scopeManager.addSymbol(stmt.variable)
                 resolveBlock(stmt.body)
             }
             is Block -> resolveBlock(stmt)

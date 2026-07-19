@@ -1,0 +1,20 @@
+// 10 - Type Aliases
+// Demonstrates type alias declarations.
+
+type UserId = int;
+type Email = string;
+
+fn get_name(uid: int) -> string {
+    if uid == 1 {
+        return "Alice";
+    }
+    return "Unknown";
+}
+
+fn main() {
+    let id = 42;
+    let email = "user@example.com";
+    println(id);
+    println(email);
+    println(get_name(id));
+}

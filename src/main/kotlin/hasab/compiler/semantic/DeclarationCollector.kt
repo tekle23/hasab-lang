@@ -18,8 +18,29 @@ public class DeclarationCollector(
 
     public fun collect(module: Module): Pair<SymbolTable, List<SemanticDiagnostic>> {
         table = SymbolTable.EMPTY
+        registerBuiltins()
         collectDeclarations(module.declarations, isTopLevel = true)
         return table to diagnostics.toList()
+    }
+
+    private fun registerBuiltins() {
+        val range = SourceRange(
+            SourcePosition(1, 1, 0),
+            SourcePosition(1, 1, 0),
+        )
+        val builtins = listOf(
+            "println", "print", "len", "abs", "str", "int", "float",
+            "now", "min", "max", "sqrt", "pow",
+        )
+        for (name in builtins) {
+            table = table.define(FunctionSymbol(
+                name = name,
+                visibility = Visibility.PUBLIC,
+                range = range,
+                fileName = "<builtin>",
+                isExtern = true,
+            ))
+        }
     }
 
     private fun report(code: DiagnosticCode, message: String, node: AstNode, hint: String? = null) {
@@ -127,12 +148,16 @@ public class DeclarationCollector(
         ))
     }
 
+    private var currentFunctionParams: MutableSet<String> = mutableSetOf()
+
     private fun collectFnParams(params: List<FunctionParam>): List<String> {
         val names = mutableListOf<String>()
+        currentFunctionParams.clear()
         for (param in params) {
-            if (table.hasCurrent(param.name)) {
+            if (param.name in currentFunctionParams) {
                 reportParamDuplicate(param.name, param.startOffset, param.endOffset, param.fileName, param.line, param.column)
             }
+            currentFunctionParams.add(param.name)
             table = table.define(ParameterSymbol(
                 name = param.name,
                 visibility = Visibility.MODULE_LOCAL,
@@ -283,7 +308,17 @@ public class DeclarationCollector(
                     }
                 }
                 is WhileStmt -> collectLetBindings(stmt.body)
-                is ForStmt -> collectLetBindings(stmt.body)
+                is ForStmt -> {
+                    table = table.define(VariableSymbol(
+                        name = stmt.variable,
+                        visibility = Visibility.MODULE_LOCAL,
+                        range = stmt.range(),
+                        fileName = stmt.fileName,
+                        parentModule = currentModule,
+                    ))
+                    scopeManager.addSymbol(stmt.variable)
+                    collectLetBindings(stmt.body)
+                }
                 is Block -> collectLetBindings(stmt)
                 else -> {}
             }

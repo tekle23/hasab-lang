@@ -582,7 +582,7 @@ public class TypeCheckerEngine {
         }
 
         return when (calleeType) {
-            is ArrayType -> OptionalType(calleeType.elementType)
+            is ArrayType -> calleeType.elementType
             is StringType -> CharType
             else -> {
                 diagnostics.report(
@@ -810,6 +810,12 @@ public class TypeCheckerEngine {
         if (source.isAssignableTo(target)) return true
         if (NumericPromotionRules.canPromote(source, target)) return true
         if (TypeCompatibilityMatrix.isImplicitlyConvertible(source, target)) return true
+        // Unwrap type aliases for comparison
+        val rawSource = if (source is TypeAliasType) source.target else source
+        val rawTarget = if (target is TypeAliasType) target.target else target
+        if (rawSource != source || rawTarget != target) {
+            if (areTypesCompatible(rawSource, rawTarget)) return true
+        }
         if (target is OptionalType) return source is NilLiteralType || source.isAssignableTo(target.elementType)
         if (source is OptionalType) return source.elementType.isAssignableTo(target)
         return false

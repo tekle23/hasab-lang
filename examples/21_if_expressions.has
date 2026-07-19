@@ -1,0 +1,33 @@
+// 21 - If-Expressions
+// Demonstrates if-expressions for conditional assignment.
+
+fn main() {
+    let temperature = 75;
+    if temperature > 90 {
+        println("hot");
+    } else {
+        if temperature > 70 {
+            println("warm");
+        } else {
+            if temperature > 50 {
+                println("cool");
+            } else {
+                println("cold");
+            }
+        }
+    }
+
+    let x = 10;
+    let mut result = 0;
+    if x > 5 {
+        result = 1;
+    } else {
+        result = 0;
+    }
+    println(result);
+
+    let mut outer = 10;
+    let inner = 20;
+    outer += inner;
+    println(outer);
+}

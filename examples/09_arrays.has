@@ -1,0 +1,32 @@
+// 09 - Arrays
+// Demonstrates array creation, initialization, indexing, and iteration.
+
+fn main() {
+    let numbers = [10, 20, 30, 40, 50];
+    println(numbers[0]);
+    println(numbers[2]);
+    println(len(numbers));
+
+    let arr = .[5];
+    println(len(arr));
+
+    let colors = ["red", "green", "blue"];
+    for (c: colors) {
+        println(c);
+    }
+
+    let mut values = [1, 2, 3, 4, 5];
+    values[0] = 100;
+    values[4] = 500;
+    println(values[0]);
+    println(values[4]);
+
+    let matrix = [[1, 2], [3, 4]];
+    println(matrix[0][1]);
+    println(matrix[1][0]);
+
+    let sums = [1 + 2, 3 * 4, 10 - 5];
+    println(sums[0]);
+    println(sums[1]);
+    println(sums[2]);
+}
