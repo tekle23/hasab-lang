@@ -37,6 +37,23 @@ public class TypeEnvironment private constructor(
             env = env.define("max", FunctionType(listOf(IntType, IntType), IntType))
             env = env.define("str", FunctionType(listOf(TypeVariable(2)), StringType))
             env = env.define("now", FunctionType(listOf(), IntType))
+            // Type conversion functions
+            env = env.define("to_int", FunctionType(listOf(TypeVariable(3)), IntType))
+            env = env.define("to_float", FunctionType(listOf(TypeVariable(4)), FloatType))
+            env = env.define("typeof", FunctionType(listOf(TypeVariable(5)), StringType))
+            // Assertion
+            env = env.define("assert", FunctionType(listOf(BoolType), VoidType))
+            // String functions
+            env = env.define("substring", FunctionType(listOf(StringType, IntType, IntType), StringType))
+            env = env.define("contains", FunctionType(listOf(StringType, StringType), BoolType))
+            env = env.define("trim", FunctionType(listOf(StringType), StringType))
+            env = env.define("upper", FunctionType(listOf(StringType), StringType))
+            env = env.define("lower", FunctionType(listOf(StringType), StringType))
+            env = env.define("reverse", FunctionType(listOf(StringType), StringType))
+            env = env.define("replace", FunctionType(listOf(StringType, StringType, StringType), StringType))
+            env = env.define("split", FunctionType(listOf(StringType, StringType), ArrayType(StringType)))
+            env = env.define("starts_with", FunctionType(listOf(StringType, StringType), BoolType))
+            env = env.define("ends_with", FunctionType(listOf(StringType, StringType), BoolType))
             return env
         }
     }

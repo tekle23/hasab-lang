@@ -100,6 +100,16 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
         emitIndent()
         emitLine("if (obj instanceof Object[]) return ((Object[]) obj).length;")
         emitIndent()
+        emitLine("if (obj instanceof int[]) return ((int[]) obj).length;")
+        emitIndent()
+        emitLine("if (obj instanceof double[]) return ((double[]) obj).length;")
+        emitIndent()
+        emitLine("if (obj instanceof boolean[]) return ((boolean[]) obj).length;")
+        emitIndent()
+        emitLine("if (obj instanceof char[]) return ((char[]) obj).length;")
+        emitIndent()
+        emitLine("if (obj instanceof long[]) return ((long[]) obj).length;")
+        emitIndent()
         emitLine("if (obj instanceof String) return ((String) obj).length();")
         emitIndent()
         emitLine("throw new UnsupportedOperationException(\"len() not supported for \" + obj.getClass());")
@@ -122,6 +132,34 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
         emitLine("private static void print(Object obj) { System.out.print(obj); }")
         emitIndent()
         emitLine("private static int now() { return (int) System.currentTimeMillis(); }")
+        emitIndent()
+        emitLine("private static int to_int(Object obj) { if (obj instanceof Number) return ((Number) obj).intValue(); if (obj instanceof String) return Integer.parseInt((String) obj); throw new IllegalArgumentException(\"Cannot convert \" + obj.getClass() + \" to int\"); }")
+        emitIndent()
+        emitLine("private static double to_float(Object obj) { if (obj instanceof Number) return ((Number) obj).doubleValue(); if (obj instanceof String) return Double.parseDouble((String) obj); throw new IllegalArgumentException(\"Cannot convert \" + obj.getClass() + \" to float\"); }")
+        emitIndent()
+        emitLine("private static String typeof(Object obj) { return obj == null ? \"nil\" : obj.getClass().getSimpleName(); }")
+        emitIndent()
+        emitLine("private static void _hs_assert(boolean cond) { if (!cond) throw new AssertionError(\"Assertion failed\"); }")
+        emitIndent()
+        emitLine("private static String substring(String s, int start, int end) { return s.substring(start, end); }")
+        emitIndent()
+        emitLine("private static boolean contains(String s, String sub) { return s.contains(sub); }")
+        emitIndent()
+        emitLine("private static String trim(String s) { return s.trim(); }")
+        emitIndent()
+        emitLine("private static String upper(String s) { return s.toUpperCase(); }")
+        emitIndent()
+        emitLine("private static String lower(String s) { return s.toLowerCase(); }")
+        emitIndent()
+        emitLine("private static String reverse(String s) { return new StringBuilder(s).reverse().toString(); }")
+        emitIndent()
+        emitLine("private static String replace(String s, String from, String to) { return s.replace(from, to); }")
+        emitIndent()
+        emitLine("private static String[] split(String s, String delim) { return s.split(delim); }")
+        emitIndent()
+        emitLine("private static boolean starts_with(String s, String prefix) { return s.startsWith(prefix); }")
+        emitIndent()
+        emitLine("private static boolean ends_with(String s, String suffix) { return s.endsWith(suffix); }")
     }
 
     private fun emitWithSourceMap(node: AstNode, block: () -> Unit) {
@@ -192,21 +230,28 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             emit("$javaReturnType ${sanitizeName(decl.name)}(")
 
             val hasSelf = decl.parameters.any { it.name == "self" }
-            val params = if (hasSelf && selfTypeName != null) {
+            val isMain = decl.name == "main" && !isMethod
+            val params = if (isMain) {
+                emptyList()
+            } else if (hasSelf && selfTypeName != null) {
                 decl.parameters
             } else {
                 decl.parameters.filter { it.name != "self" }
             }
-            emit(params.joinToString(", ") { fp ->
-                val pt = if (fp.name == "self" && selfTypeName != null) {
-                    typeEnv.lookup(selfTypeName) ?: VoidType
-                } else if (fp.type != null) {
-                    resolveTypeNode(fp.type)
-                } else {
-                    VoidType
-                }
-                "${TypeMapper.toJavaType(pt)} ${sanitizeName(fp.name)}"
-            })
+            if (isMain) {
+                emit("String[] args")
+            } else {
+                emit(params.joinToString(", ") { fp ->
+                    val pt = if (fp.name == "self" && selfTypeName != null) {
+                        typeEnv.lookup(selfTypeName) ?: VoidType
+                    } else if (fp.type != null) {
+                        resolveTypeNode(fp.type)
+                    } else {
+                        VoidType
+                    }
+                    "${TypeMapper.toJavaType(pt)} ${sanitizeName(fp.name)}"
+                })
+            }
             emit(")")
 
             if (decl.body != null) {
@@ -596,6 +641,7 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             "super" -> "isSuper"
             "class" -> "isClass"
             "void" -> "isVoid"
+            "assert" -> "_hs_assert"
             "int", "float", "string", "bool", "char" -> "v_$name"
             else -> name
         }

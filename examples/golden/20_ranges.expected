@@ -1,0 +1,18 @@
+Exclusive range (0..5): 
+[I@24d46ca6
+Inclusive range (0..=5): 
+[I@4517d9a3
+x is in range [0, 10)
+Iterating 0..5:
+<TIMESTAMP>
+<TIMESTAMP>
+<TIMESTAMP>
+<TIMESTAMP>
+<TIMESTAMP>
+Countdown from 5:
+<TIMESTAMP>
+<TIMESTAMP>
+<TIMESTAMP>
+<TIMESTAMP>
+<TIMESTAMP>
+Liftoff!
