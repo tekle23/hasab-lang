@@ -3,12 +3,13 @@ package hasab.compiler.backend
 import hasab.compiler.frontend.lexer.Lexer
 import hasab.compiler.frontend.lexer.SourceFile
 import hasab.compiler.frontend.parser.Parser
+import hasab.compiler.semantic.SemanticAnalyzer
 import hasab.compiler.types.TypeChecker
-import hasab.compiler.types.TypeCheckResult
+import hasab.compiler.types.TypeDiagnostic
 
 public data class CompilationResult(
     val javaSource: String,
-    val typeCheckResult: TypeCheckResult,
+    val typeDiagnostics: List<TypeDiagnostic>,
     val hasErrors: Boolean,
 )
 
@@ -19,16 +20,17 @@ public object HasabToJavaCompiler {
         val lexerResult = Lexer(source).tokenize()
         val parseResult = Parser(lexerResult).parse()
 
-        val typeChecker = TypeChecker(parseResult.module)
-        val typeCheckResult = typeChecker.check()
+        val semanticModel = SemanticAnalyzer().analyze(parseResult.module)
+        val typeChecker = TypeChecker()
+        val typeCheckResult = typeChecker.check(parseResult.module)
 
         val generator = JavaSourceGenerator(typeCheckDiagnostics = typeCheckResult.diagnostics)
         val javaSource = generator.generate(parseResult.module)
 
         return CompilationResult(
             javaSource = javaSource,
-            typeCheckResult = typeCheckResult,
-            hasErrors = typeCheckResult.hasErrors || parseResult.hasErrors,
+            typeDiagnostics = typeCheckResult.diagnostics,
+            hasErrors = typeCheckResult.hasErrors || parseResult.hasErrors || semanticModel.hasErrors,
         )
     }
 

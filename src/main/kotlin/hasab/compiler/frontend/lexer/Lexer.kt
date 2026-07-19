@@ -303,6 +303,7 @@ public class Lexer(
                    else if (match('>')) return makeToken(TokenType.FatArrow, "=>", startLine, startCol, startOffset)
                    else return makeToken(TokenType.Assign, "=", startLine, startCol, startOffset)
             '!' -> if (match('=')) return makeToken(TokenType.NotEqual, "!=", startLine, startCol, startOffset)
+                   else if (match('!')) return makeToken(TokenType.BangBang, "!!", startLine, startCol, startOffset)
                    else return makeToken(TokenType.Not, "!", startLine, startCol, startOffset)
             '<' -> if (match('=')) return makeToken(TokenType.LessEqual, "<=", startLine, startCol, startOffset)
                    else if (match('<')) return makeToken(TokenType.ShiftLeft, "<<", startLine, startCol, startOffset)
@@ -331,6 +332,8 @@ public class Lexer(
             ';' -> return makeToken(TokenType.Semicolon, ";", startLine, startCol, startOffset)
             ',' -> return makeToken(TokenType.Comma, ",", startLine, startCol, startOffset)
             '_' -> return makeToken(TokenType.Underscore, "_", startLine, startCol, startOffset)
+            '?' -> if (match('.')) return makeToken(TokenType.QuestionDot, "?.", startLine, startCol, startOffset)
+                   else return makeToken(TokenType.Question, "?", startLine, startCol, startOffset)
             else -> {
                 addDiagnostic(
                     DiagnosticSeverity.ERROR,

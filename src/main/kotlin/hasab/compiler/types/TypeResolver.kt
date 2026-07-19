@@ -1,72 +1,60 @@
 package hasab.compiler.types
 
-import hasab.compiler.frontend.ast.*
+import hasab.compiler.frontend.ast.ArrayType as AstArrayType
+import hasab.compiler.frontend.ast.FunctionType as AstFunctionType
+import hasab.compiler.frontend.ast.IdentifierType
+import hasab.compiler.frontend.ast.OptionalType as AstOptionalType
+import hasab.compiler.frontend.ast.PointerType as AstPointerType
+import hasab.compiler.frontend.ast.QualifiedType
+import hasab.compiler.frontend.ast.TypeNode
+import hasab.compiler.frontend.ast.VoidType as AstVoidType
 
-public class TypeResolver(private val env: TypeEnvironment) {
+/**
+ * Resolves AST [TypeNode] references to concrete [Type] instances
+ * using a [TypeEnvironment].
+ *
+ * Stateless — all state is held in the environment parameter.
+ */
+public object TypeResolver {
 
-    private val errors: MutableList<TypeDiagnostic> = mutableListOf()
-
-    public fun errors(): List<TypeDiagnostic> = errors.toList()
-
-    public fun resolve(node: TypeNode): ResolvedType {
-        return when (node) {
-            is IdentifierType -> resolveIdentifier(node)
-            is QualifiedType -> resolveQualified(node)
-            is ArrayType -> resolveArray(node)
-            is PointerType -> resolvePointer(node)
-            is OptionalType -> resolveOptional(node)
-            is FunctionType -> resolveFunction(node)
-            is VoidType -> ResolvedType.VoidType
+    /**
+     * Resolve an AST [TypeNode] to a [Type].
+     *
+     * @param node the type annotation AST node
+     * @param env the current type environment for name resolution
+     * @param onUndefined callback invoked when a type name is not found (optional)
+     * @return the resolved [Type], or [UnknownType] if resolution fails
+     */
+    public fun resolve(
+        node: TypeNode,
+        env: TypeEnvironment,
+        onUndefined: ((String) -> Unit)? = null,
+    ): Type = when (node) {
+        is IdentifierType -> {
+            val resolved = env.lookup(node.name)
+            if (resolved != null) resolved
+            else {
+                onUndefined?.invoke(node.name)
+                UnknownType
+            }
         }
-    }
-
-    private fun resolveIdentifier(node: IdentifierType): ResolvedType {
-        val builtin = BuiltinTypes.lookup(node.name)
-        if (builtin != null) return builtin
-
-        val symbol = env.lookup(node.name)
-        if (symbol != null) return symbol.type
-
-        errors.add(TypeError(
-            message = "Unknown type '${node.name}'",
-            range = node.range(),
-            fileName = node.fileName,
-            hint = "Did you forget to declare type '${node.name}'?",
-        ))
-        return ResolvedType.ErrorType
-    }
-
-    private fun resolveQualified(node: QualifiedType): ResolvedType {
-        val fullName = node.path.joinToString("::")
-        val symbol = env.lookup(fullName)
-        if (symbol != null) return symbol.type
-
-        errors.add(TypeError(
-            message = "Unknown qualified type '$fullName'",
-            range = node.range(),
-            fileName = node.fileName,
-        ))
-        return ResolvedType.ErrorType
-    }
-
-    private fun resolveArray(node: ArrayType): ResolvedType {
-        val elementType = resolve(node.elementType)
-        return ResolvedType.ArrayType(elementType)
-    }
-
-    private fun resolvePointer(node: PointerType): ResolvedType {
-        val elementType = resolve(node.elementType)
-        return ResolvedType.PointerType(elementType)
-    }
-
-    private fun resolveOptional(node: OptionalType): ResolvedType {
-        val elementType = resolve(node.elementType)
-        return ResolvedType.OptionalType(elementType)
-    }
-
-    private fun resolveFunction(node: FunctionType): ResolvedType {
-        val paramTypes = node.parameterTypes.map { resolve(it) }
-        val returnType = resolve(node.returnType)
-        return ResolvedType.FunctionType(paramTypes, returnType)
+        is QualifiedType -> {
+            val name = node.path.last()
+            val resolved = env.lookup(name)
+            if (resolved != null) resolved
+            else {
+                onUndefined?.invoke(name)
+                UnknownType
+            }
+        }
+        is AstArrayType -> ArrayType(resolve(node.elementType, env, onUndefined))
+        is AstPointerType -> PointerType(resolve(node.elementType, env, onUndefined))
+        is AstOptionalType -> OptionalType(resolve(node.elementType, env, onUndefined))
+        is AstFunctionType -> {
+            val paramTypes = node.parameterTypes.map { resolve(it, env, onUndefined) }
+            val retType = resolve(node.returnType, env, onUndefined)
+            FunctionType(paramTypes, retType)
+        }
+        is AstVoidType -> VoidType
     }
 }

@@ -1,48 +1,54 @@
 package hasab.compiler.backend
 
-import hasab.compiler.types.ResolvedType
+import hasab.compiler.types.*
 
 public object TypeMapper {
 
-    public fun toJavaType(type: ResolvedType): String {
+    public fun toJavaType(type: Type): String {
         return when (type) {
-            is ResolvedType.IntType -> "int"
-            is ResolvedType.FloatType -> "double"
-            is ResolvedType.StringType -> "String"
-            is ResolvedType.BoolType -> "boolean"
-            is ResolvedType.CharType -> "char"
-            is ResolvedType.VoidType -> "void"
-            is ResolvedType.NilType -> "Object"
-            is ResolvedType.ArrayType -> "${toJavaType(type.elementType)}[]"
-            is ResolvedType.PointerType -> "Object"
-            is ResolvedType.OptionalType -> "Object"
-            is ResolvedType.FunctionType -> "Object"
-            is ResolvedType.StructType -> type.name
-            is ResolvedType.EnumType -> type.name
-            is ResolvedType.TypeAlias -> toJavaType(type.underlying)
-            is ResolvedType.TraitType -> type.name
-            is ResolvedType.ErrorType -> "Object"
+            is IntType -> "int"
+            is FloatType -> "double"
+            is StringType -> "String"
+            is BoolType -> "boolean"
+            is CharType -> "char"
+            is VoidType -> "void"
+            is NilLiteralType -> "Object"
+            is ArrayType -> "${toJavaType(type.elementType)}[]"
+            is PointerType -> "Object"
+            is OptionalType -> "Object"
+            is FunctionType -> "Object"
+            is LambdaType -> "Object"
+            is StructType -> type.name
+            is EnumType -> type.name
+            is TypeAliasType -> toJavaType(type.target)
+            is TraitType -> type.name
+            is UnknownType -> "Object"
+            is BottomType -> "Object"
+            is TypeVariable -> "Object"
         }
     }
 
-    public fun toJavaDefault(type: ResolvedType): String {
+    public fun toJavaDefault(type: Type): String {
         return when (type) {
-            is ResolvedType.IntType -> "0"
-            is ResolvedType.FloatType -> "0.0"
-            is ResolvedType.StringType -> "\"\""
-            is ResolvedType.BoolType -> "false"
-            is ResolvedType.CharType -> "'\\0'"
-            is ResolvedType.VoidType -> ""
-            is ResolvedType.NilType -> "null"
-            is ResolvedType.ArrayType -> "new ${toJavaType(type.elementType)}[0]"
-            is ResolvedType.PointerType -> "null"
-            is ResolvedType.OptionalType -> "null"
-            is ResolvedType.FunctionType -> "null"
-            is ResolvedType.StructType -> "new ${type.name}()"
-            is ResolvedType.EnumType -> "null"
-            is ResolvedType.TypeAlias -> toJavaDefault(type.underlying)
-            is ResolvedType.TraitType -> "null"
-            is ResolvedType.ErrorType -> "null"
+            is IntType -> "0"
+            is FloatType -> "0.0"
+            is StringType -> "\"\""
+            is BoolType -> "false"
+            is CharType -> "'\\0'"
+            is VoidType -> ""
+            is NilLiteralType -> "null"
+            is ArrayType -> "new ${toJavaType(type.elementType)}[0]"
+            is PointerType -> "null"
+            is OptionalType -> "null"
+            is FunctionType -> "null"
+            is LambdaType -> "null"
+            is StructType -> "new ${type.name}()"
+            is EnumType -> "null"
+            is TypeAliasType -> toJavaDefault(type.target)
+            is TraitType -> "null"
+            is UnknownType -> "null"
+            is BottomType -> "null"
+            is TypeVariable -> "null"
         }
     }
 }

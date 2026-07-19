@@ -630,4 +630,57 @@ class LexerTest {
         assertEquals(TokenType.Identifier, result.tokens[2].type)
         assertEquals("io", result.tokens[2].lexeme)
     }
+
+    // ── Safe navigation (?.) and null assertion (!!) ──────────────
+
+    @Test
+    fun `question dot token`() {
+        val result = tokenize("obj?.field")
+        assertTokenAt(result, 0, TokenType.Identifier, "obj", expectedColumn = 1)
+        assertTokenAt(result, 1, TokenType.QuestionDot, "?.", expectedColumn = 4)
+        assertTokenAt(result, 2, TokenType.Identifier, "field", expectedColumn = 6)
+    }
+
+    @Test
+    fun `bang bang token`() {
+        val result = tokenize("x!!")
+        assertTokenAt(result, 0, TokenType.Identifier, "x", expectedColumn = 1)
+        assertTokenAt(result, 1, TokenType.BangBang, "!!", expectedColumn = 2)
+    }
+
+    @Test
+    fun `question dot in chain`() {
+        val result = tokenize("a?.b?.c")
+        assertTokenAt(result, 0, TokenType.Identifier, "a", expectedColumn = 1)
+        assertTokenAt(result, 1, TokenType.QuestionDot, "?.", expectedColumn = 2)
+        assertTokenAt(result, 2, TokenType.Identifier, "b", expectedColumn = 4)
+        assertTokenAt(result, 3, TokenType.QuestionDot, "?.", expectedColumn = 5)
+        assertTokenAt(result, 4, TokenType.Identifier, "c", expectedColumn = 7)
+    }
+
+    @Test
+    fun `bang bang after field access`() {
+        val result = tokenize("obj.field!!")
+        assertEquals(TokenType.Identifier, result.tokens[0].type)
+        assertEquals(TokenType.Dot, result.tokens[1].type)
+        assertEquals(TokenType.Identifier, result.tokens[2].type)
+        assertEquals(TokenType.BangBang, result.tokens[3].type)
+    }
+
+    @Test
+    fun `lone question mark produces question token`() {
+        val result = tokenize("?")
+        assertEquals(TokenType.Question, result.tokens[0].type)
+        assertEquals("?", result.tokens[0].lexeme)
+    }
+
+    @Test
+    fun `question dot not confused with range`() {
+        val result = tokenize("a?.b..c")
+        assertEquals(TokenType.Identifier, result.tokens[0].type)
+        assertEquals(TokenType.QuestionDot, result.tokens[1].type)
+        assertEquals(TokenType.Identifier, result.tokens[2].type)
+        assertEquals(TokenType.RangeExclusive, result.tokens[3].type)
+        assertEquals(TokenType.Identifier, result.tokens[4].type)
+    }
 }

@@ -87,6 +87,8 @@ public fun <T> AstNode.accept(visitor: AstVisitor<T>): T = when (this) {
     is CallExpr -> visitor.visitCall(this)
     is IndexExpr -> visitor.visitIndex(this)
     is FieldAccessExpr -> visitor.visitFieldAccess(this)
+    is SafeFieldAccessExpr -> visitor.visitFieldAccess(FieldAccessExpr(this.callee, this.fieldName, this.fileName, this.line, this.column, this.startOffset, this.endOffset))
+    is NullAssertExpr -> visitor.visitParen(ParenExpr(this.operand, this.fileName, this.line, this.column, this.startOffset, this.endOffset))
     is ParenExpr -> visitor.visitParen(this)
     is ArrayLiteralExpr -> visitor.visitArrayLiteral(this)
     is ArrayInitExpr -> visitor.visitArrayInit(this)

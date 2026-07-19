@@ -43,6 +43,9 @@ public sealed class TokenType {
     public data object FatArrow : TokenType()         // =>
     public data object DoubleColon : TokenType()      // ::
     public data object Dot : TokenType()              // .
+    public data object QuestionDot : TokenType()      // ?.
+    public data object Question : TokenType()          // ?
+    public data object BangBang : TokenType()         // !!
     public data object RangeInclusive : TokenType()   // ..=
     public data object RangeExclusive : TokenType()   // ..
 

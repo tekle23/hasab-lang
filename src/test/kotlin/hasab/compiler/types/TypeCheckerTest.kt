@@ -16,7 +16,7 @@ class TypeCheckerTest {
         val source = SourceFile("test.hasab", code)
         val lexerResult = Lexer(source).tokenize()
         val parseResult = Parser(lexerResult).parse()
-        return TypeChecker(parseResult.module).check()
+        return TypeChecker().check(parseResult.module)
     }
 
     // ── Function declarations ──────────────────────────────────────
@@ -37,7 +37,7 @@ class TypeCheckerTest {
     fun `function returning wrong type`() {
         val r = check("fn getNum() -> int { return \"hello\"; }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("Return type mismatch") })
+        assertTrue(r.errors.any { it.message.contains("Expected return type") })
     }
 
     @Test
@@ -64,7 +64,7 @@ class TypeCheckerTest {
     fun `let declaration with type mismatch`() {
         val r = check("fn main() { let x: int = \"hello\"; }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("Type mismatch") })
+        assertTrue(r.errors.any { it.message.contains("Cannot assign") })
     }
 
     @Test
@@ -83,7 +83,7 @@ class TypeCheckerTest {
     fun `immutable variable cannot be reassigned`() {
         val r = check("fn main() { let x = 1; x = 2; }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("non-assignable") })
+        assertTrue(r.errors.any { it.message.contains("immutable variable") })
     }
 
     @Test
@@ -130,7 +130,7 @@ class TypeCheckerTest {
     fun `int and bool cannot add`() {
         val r = check("fn main() { let x = 1 + true; }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("cannot be applied") })
+        assertTrue(r.errors.any { it.message.contains("Cannot apply") })
     }
 
     @Test
@@ -311,7 +311,7 @@ class TypeCheckerTest {
     fun `calling non-function is error`() {
         val r = check("fn main() { let x = 42; let r = x(1); }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("not a function") })
+        assertTrue(r.errors.any { it.message.contains("not callable") })
     }
 
     // ── Array operations ───────────────────────────────────────────
@@ -326,7 +326,7 @@ class TypeCheckerTest {
     fun `array index with non-int`() {
         val r = check("fn main() { let arr = [1, 2, 3]; let v = arr[true]; }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("index must be 'int'") })
+        assertTrue(r.errors.any { it.message.contains("Index must be 'int'") })
     }
 
     @Test
@@ -370,7 +370,7 @@ class TypeCheckerTest {
     fun `undefined type reports error`() {
         val r = check("fn main() { let x: UnknownType = 1; }")
         assertTrue(r.hasErrors)
-        assertTrue(r.errors.any { it.message.contains("Unknown type") })
+        assertTrue(r.errors.any { it.message.contains("Unknown type 'UnknownType'") })
     }
 
     @Test
@@ -425,5 +425,116 @@ class TypeCheckerTest {
     fun `if expression branches incompatible`() {
         val r = check("fn main() { let x = if true { 1 } else { \"hi\" }; }")
         assertTrue(r.hasErrors)
+    }
+
+    // ── Safe navigation (?.) ──────────────────────────────────────
+
+    @Test
+    fun `safe field access on struct returns optional`() {
+        val r = check("""
+            struct Point { x: int, y: int }
+            fn getX(p: Point) -> int { return p.x!!; }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    @Test
+    fun `safe field access on optional struct`() {
+        val r = check("""
+            struct Point { x: int }
+            fn getX(p: Point?) -> int? { return p?.x; }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    @Test
+    fun `safe field access on non-struct reports error`() {
+        val r = check("""
+            fn main() { let x = 42?.foo; }
+        """.trimIndent())
+        assertTrue(r.hasErrors)
+    }
+
+    @Test
+    fun `safe field access unknown field reports error`() {
+        val r = check("""
+            struct Point { x: int }
+            fn main(p: Point?) { let y = p?.z; }
+        """.trimIndent())
+        assertTrue(r.hasErrors)
+        assertTrue(r.errors.any { it.message.contains("no field 'z'") })
+    }
+
+    @Test
+    fun `safe field access valid struct field no error`() {
+        val r = check("""
+            struct Point { x: int }
+            fn main(p: Point?) { let y = p?.x; }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    // ── Null assertion (!!) ──────────────────────────────────────
+
+    @Test
+    fun `null assert unwraps optional`() {
+        val r = check("""
+            fn main() {
+                let x: int? = 42;
+                let y: int = x!!;
+            }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    @Test
+    fun `null assert on non-optional is ok`() {
+        val r = check("""
+            fn main() {
+                let x: int = 42;
+                let y: int = x!!;
+            }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    @Test
+    fun `null assert on nil literal reports error`() {
+        val r = check("""
+            fn main() {
+                let x = nil!!;
+            }
+        """.trimIndent())
+        assertTrue(r.hasErrors)
+    }
+
+    @Test
+    fun `null assert on string optional`() {
+        val r = check("""
+            fn main() {
+                let s: string? = "hello";
+                let t: string = s!!;
+            }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    @Test
+    fun `safe navigation then null assert`() {
+        val r = check("""
+            struct User { name: string }
+            fn getName(u: User?) -> string { return u?.name!!; }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
+    }
+
+    @Test
+    fun `chained safe navigation`() {
+        val r = check("""
+            struct Inner { value: int }
+            struct Outer { inner: Inner }
+            fn getVal(o: Outer?) -> int? { return o?.inner?.value; }
+        """.trimIndent())
+        assertFalse(r.hasErrors)
     }
 }

@@ -295,6 +295,23 @@ public class ExpressionParser(
                         startOffset = expr.startOffset, endOffset = field.endOffset,
                     )
                 }
+                stream.isAt(TokenType.QuestionDot) -> {
+                    stream.advance()
+                    val field = stream.expect(TokenType.Identifier)
+                    expr = SafeFieldAccessExpr(
+                        callee = expr, fieldName = field.lexeme,
+                        fileName = expr.fileName, line = expr.line, column = expr.column,
+                        startOffset = expr.startOffset, endOffset = field.endOffset,
+                    )
+                }
+                stream.isAt(TokenType.BangBang) -> {
+                    val token = stream.advance()
+                    expr = NullAssertExpr(
+                        operand = expr,
+                        fileName = expr.fileName, line = expr.line, column = expr.column,
+                        startOffset = expr.startOffset, endOffset = token.endOffset,
+                    )
+                }
                 else -> break
             }
         }

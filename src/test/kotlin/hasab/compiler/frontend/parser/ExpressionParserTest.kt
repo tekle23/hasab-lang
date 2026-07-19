@@ -367,4 +367,57 @@ class ExpressionParserTest {
         assertIs<IfExpr>(e)
         assertEquals(null, e.elseBranch)
     }
+
+    // ── Safe navigation (?.) and null assertion (!!) ──────────────
+
+    @Test
+    fun `safe field access`() {
+        val e = parseExpr("obj?.field")
+        assertIs<SafeFieldAccessExpr>(e)
+        assertEquals("field", e.fieldName)
+        assertIs<IdentifierExpr>(e.callee)
+    }
+
+    @Test
+    fun `null assert postfix`() {
+        val e = parseExpr("x!!")
+        assertIs<NullAssertExpr>(e)
+        assertIs<IdentifierExpr>(e.operand)
+    }
+
+    @Test
+    fun `safe field access chained`() {
+        val e = parseExpr("a?.b?.c")
+        assertIs<SafeFieldAccessExpr>(e)
+        assertEquals("c", e.fieldName)
+        assertIs<SafeFieldAccessExpr>(e.callee)
+    }
+
+    @Test
+    fun `null assert on field access`() {
+        val e = parseExpr("obj.field!!")
+        assertIs<NullAssertExpr>(e)
+        assertIs<FieldAccessExpr>(e.operand)
+    }
+
+    @Test
+    fun `safe field access then null assert`() {
+        val e = parseExpr("obj?.field!!")
+        assertIs<NullAssertExpr>(e)
+        assertIs<SafeFieldAccessExpr>(e.operand)
+    }
+
+    @Test
+    fun `safe call via dot question`() {
+        val e = parseExpr("obj?.method()")
+        assertIs<CallExpr>(e)
+        assertIs<SafeFieldAccessExpr>(e.callee)
+    }
+
+    @Test
+    fun `null assert on index`() {
+        val e = parseExpr("arr[0]!!")
+        assertIs<NullAssertExpr>(e)
+        assertIs<IndexExpr>(e.operand)
+    }
 }

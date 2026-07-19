@@ -153,6 +153,31 @@ public data class FieldAccessExpr(
     override fun children(): List<AstNode> = listOf(callee)
 }
 
+public data class SafeFieldAccessExpr(
+    val callee: Expr,
+    val fieldName: String,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(callee)
+}
+
+public data class NullAssertExpr(
+    val operand: Expr,
+    override val fileName: String,
+    override val line: Int,
+    override val column: Int,
+    override val startOffset: Int,
+    override val endOffset: Int,
+    override val docComment: String? = null,
+) : Expr {
+    override fun children(): List<AstNode> = listOf(operand)
+}
+
 public data class ParenExpr(
     val inner: Expr,
     override val fileName: String,

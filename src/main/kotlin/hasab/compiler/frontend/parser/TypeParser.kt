@@ -139,7 +139,20 @@ public class TypeParser(
         )
     }
 
-    private fun parseTypeSuffix(base: TypeNode): TypeNode = base
+    private fun parseTypeSuffix(base: TypeNode): TypeNode {
+        if (stream.isAt(TokenType.Question)) {
+            val token = stream.advance()
+            return OptionalType(
+                elementType = base,
+                fileName = token.fileName,
+                line = token.line,
+                column = token.column,
+                startOffset = base.startOffset,
+                endOffset = token.endOffset,
+            )
+        }
+        return base
+    }
 
     private fun reportError(message: String, token: Token) {
         diagnostics.add(

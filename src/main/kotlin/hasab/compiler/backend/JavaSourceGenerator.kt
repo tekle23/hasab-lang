@@ -3,6 +3,11 @@ package hasab.compiler.backend
 import hasab.compiler.frontend.lexer.DiagnosticSeverity
 import hasab.compiler.frontend.ast.*
 import hasab.compiler.types.*
+import hasab.compiler.frontend.ast.ArrayType as AstArrayType
+import hasab.compiler.frontend.ast.FunctionType as AstFunctionType
+import hasab.compiler.frontend.ast.OptionalType as AstOptionalType
+import hasab.compiler.frontend.ast.PointerType as AstPointerType
+import hasab.compiler.frontend.ast.VoidType as AstVoidType
 
 public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiagnostic> = emptyList()) {
 
@@ -54,7 +59,7 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
     }
 
     private fun generateFnDecl(decl: FnDecl, isMethod: Boolean = false) {
-        val returnType = if (decl.returnType != null) resolveTypeNode(decl.returnType) else ResolvedType.VoidType
+        val returnType = if (decl.returnType != null) resolveTypeNode(decl.returnType) else VoidType
         val javaReturnType = TypeMapper.toJavaType(returnType)
 
         emitIndent()
@@ -63,7 +68,7 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
 
         val params = decl.parameters.filter { it.name != "self" }
         emit(params.joinToString(", ") { fp ->
-            val pt = if (fp.type != null) resolveTypeNode(fp.type) else ResolvedType.VoidType
+            val pt = if (fp.type != null) resolveTypeNode(fp.type) else VoidType
             "${TypeMapper.toJavaType(pt)} ${sanitizeName(fp.name)}"
         })
         emit(")")
@@ -362,7 +367,7 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             }
             is ArrayInitExpr -> {
                 val elemType = if (expr.elementType != null) resolveTypeNode(expr.elementType)
-                else ResolvedType.StructType("Object", linkedMapOf())
+                else StructType("Object", emptyList())
                 emit("new ${TypeMapper.toJavaType(elemType)}[")
                 generateExpression(expr.size)
                 emit("]")
@@ -385,6 +390,18 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
                 generateExpression(expr.target)
                 emit(" ${expr.operator} ")
                 generateExpression(expr.value)
+            }
+            is SafeFieldAccessExpr -> {
+                emit("(")
+                generateExpression(expr.callee)
+                emit(" != null ? ")
+                generateExpression(expr.callee)
+                emit(".${sanitizeName(expr.fieldName)} : null)")
+            }
+            is NullAssertExpr -> {
+                emit("Objects.requireNonNull(")
+                generateExpression(expr.operand)
+                emit(")")
             }
         }
     }
@@ -426,49 +443,49 @@ public class JavaSourceGenerator(private val typeCheckDiagnostics: List<TypeDiag
             .replace("\t", "\\t")
     }
 
-    private fun resolveTypeNode(node: TypeNode): ResolvedType {
+    private fun resolveTypeNode(node: TypeNode): Type {
         return when (node) {
-            is IdentifierType -> BuiltinTypes.lookup(node.name) ?: ResolvedType.StructType(node.name, linkedMapOf())
-            is QualifiedType -> ResolvedType.StructType(node.path.joinToString("::"), linkedMapOf())
-            is hasab.compiler.frontend.ast.ArrayType -> ResolvedType.ArrayType(resolveTypeNode(node.elementType))
-            is PointerType -> ResolvedType.PointerType(resolveTypeNode(node.elementType))
-            is OptionalType -> ResolvedType.OptionalType(resolveTypeNode(node.elementType))
-            is hasab.compiler.frontend.ast.FunctionType -> {
-                ResolvedType.FunctionType(
+            is IdentifierType -> TypeEnvironment.root().lookup(node.name) ?: StructType(node.name, emptyList())
+            is QualifiedType -> StructType(node.path.joinToString("::"), emptyList())
+            is AstArrayType -> ArrayType(resolveTypeNode(node.elementType))
+            is AstPointerType -> PointerType(resolveTypeNode(node.elementType))
+            is AstOptionalType -> OptionalType(resolveTypeNode(node.elementType))
+            is AstFunctionType -> {
+                FunctionType(
                     node.parameterTypes.map { resolveTypeNode(it) },
                     resolveTypeNode(node.returnType),
                 )
             }
-            is VoidType -> ResolvedType.VoidType
+            is AstVoidType -> VoidType
         }
     }
 
-    private fun inferExpressionType(expr: Expr): ResolvedType {
-        val objectType = ResolvedType.StructType("Object", linkedMapOf())
+    private fun inferExpressionType(expr: Expr): Type {
+        val objectType = StructType("Object", emptyList())
         return when (expr) {
-            is IntegerLiteralExpr -> ResolvedType.IntType
-            is FloatLiteralExpr -> ResolvedType.FloatType
-            is StringLiteralExpr -> ResolvedType.StringType
-            is CharLiteralExpr -> ResolvedType.CharType
-            is BoolLiteralExpr -> ResolvedType.BoolType
-            is NilLiteralExpr -> ResolvedType.NilType
+            is IntegerLiteralExpr -> IntType
+            is FloatLiteralExpr -> FloatType
+            is StringLiteralExpr -> StringType
+            is CharLiteralExpr -> CharType
+            is BoolLiteralExpr -> BoolType
+            is NilLiteralExpr -> NilLiteralType
             is IdentifierExpr -> objectType
             is BinaryExpr -> {
                 val left = inferExpressionType(expr.left)
                 when (expr.operator) {
-                    "==", "!=", "<", ">", "<=", ">=", "&&", "||" -> ResolvedType.BoolType
+                    "==", "!=", "<", ">", "<=", ">=", "&&", "||" -> BoolType
                     else -> left
                 }
             }
             is ParenExpr -> inferExpressionType(expr.inner)
             is ArrayLiteralExpr -> {
-                if (expr.elements.isNotEmpty()) ResolvedType.ArrayType(inferExpressionType(expr.elements[0]))
-                else ResolvedType.ArrayType(objectType)
+                if (expr.elements.isNotEmpty()) ArrayType(inferExpressionType(expr.elements[0]))
+                else ArrayType(objectType)
             }
             is IfExpr -> {
                 val thenType = inferExpressionType(expr.thenBranch)
                 if (expr.elseBranch != null) inferExpressionType(expr.elseBranch)
-                else ResolvedType.OptionalType(thenType)
+                else OptionalType(thenType)
             }
             else -> objectType
         }

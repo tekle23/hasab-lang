@@ -15,8 +15,8 @@ class JavaSourceGeneratorTest {
         val source = SourceFile("test.hasab", code)
         val lexerResult = Lexer(source).tokenize()
         val parseResult = Parser(lexerResult).parse()
-        val tc = TypeChecker(parseResult.module)
-        val result = tc.check()
+        val tc = TypeChecker()
+        val result = tc.check(parseResult.module)
         return JavaSourceGenerator(result.diagnostics).generate(parseResult.module)
     }
 
