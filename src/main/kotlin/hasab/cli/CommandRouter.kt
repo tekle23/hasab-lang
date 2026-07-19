@@ -16,6 +16,14 @@ public class CommandRouter(private val commands: Map<String, Command>) {
             return 0
         }
         val commandName = args[0]
+        if (commandName == "--version" || commandName == "-v") {
+            println("hasab ${HasabCli.VERSION}")
+            return 0
+        }
+        if (commandName == "--help" || commandName == "-h") {
+            printHelp()
+            return 0
+        }
         val command = commands[commandName]
         if (command == null) {
             System.err.println("Unknown command: $commandName")

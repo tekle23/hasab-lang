@@ -1,0 +1,6 @@
+// hello - HASAB Application
+
+ተግባር ዋና() {
+    ጻፍ("ሰላም ሃሳብ!")
+    ጻፍ("Welcome to HASAB!")
+}

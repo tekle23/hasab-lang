@@ -64,7 +64,6 @@ public class NewCommand : Command {
     private fun createDirectories(projectDir: File) {
         File(projectDir, "src").mkdirs()
         File(projectDir, "tests").mkdirs()
-        File(projectDir, "resources").mkdirs()
     }
 
     private fun createHasabToml(projectDir: File, projectName: String, template: String) {
@@ -84,18 +83,16 @@ public class NewCommand : Command {
 
     private fun createTestFile(projectDir: File, projectName: String) {
         val content = """
-            |package $projectName
+            |fn test_basic_math() {
+            |    println("tests running...");
             |
-            |ተግባር የኔ_ፍሬገስ_ፒሬዳስት() {
-            |    ጻፍ("tests running...")
-            |
-            |    ከሆነ(1 + 1 == 2) {
-            |        ጻፍ("Basic math works!")
-            |    } አይደለ {
-            |        ጻፍ("Math is broken!")
+            |    if (1 + 1 == 2) {
+            |        println("Basic math works!");
+            |    } else {
+            |        println("Math is broken!");
             |    }
             |
-            |    ጻፍ("All tests passed!")
+            |    println("All tests passed!");
             |}
         """.trimMargin()
         File(projectDir, "tests/main_test.has").writeText(content, Charsets.UTF_8)
@@ -139,7 +136,6 @@ public class NewCommand : Command {
             |```
             |src/         - Source files
             |tests/       - Test files
-            |resources/   - Resource files
             |hasab.toml   - Project configuration
             |```
         """.trimMargin()
@@ -151,27 +147,27 @@ public class NewCommand : Command {
     private fun defaultTemplate(name: String): String = """
         |// $name - HASAB Application
         |
-        |ተግባር ዋና() {
-        |    ጻፍ("ሰላም ሃሳብ!")
-        |    ጻፍ("Welcome to HASAB!")
+        |fn main() {
+        |    println("Hello from $name!");
+        |    println("Welcome to HASAB!");
         |}
     """.trimMargin()
 
     private fun webTemplate(name: String): String = """
         |// $name - HASAB Web Application
         |
-        |ተግባር ዋና() {
-        |    ጻፍ("Starting web server...")
-        |    ጻፍ("Server running on http://localhost:8080")
+        |fn main() {
+        |    println("Starting web server...");
+        |    println("Server running on http://localhost:8080");
         |}
     """.trimMargin()
 
     private fun apiTemplate(name: String): String = """
         |// $name - HASAB API Service
         |
-        |ተግባር ዋና() {
-        |    ጻፍ("Initializing API service...")
-        |    ጻፍ("API ready on port 3000")
+        |fn main() {
+        |    println("Initializing API service...");
+        |    println("API ready on port 3000");
         |}
     """.trimMargin()
 
@@ -179,30 +175,30 @@ public class NewCommand : Command {
         |// $name - HASAB Library
         |
         |/// Adds two numbers together
-        |ተግባር መደምደም(a: ዋናብር, b: ዋናብር): ዋናብር {
-        |    ተመለስ a + b
+        |fn add(a: int, b: int): int {
+        |    return a + b;
         |}
         |
-        |ተግባር ዋና() {
-        |    ጻፍ("Library loaded: $name")
+        |fn main() {
+        |    println("Library loaded: $name");
         |}
     """.trimMargin()
 
     private fun cliTemplate(name: String): String = """
         |// $name - HASAB CLI Application
         |
-        |ተግባር ዋና() {
-        |    ጻፍ("$name v0.1.0")
-        |    ጻፍ("Use --help for usage information")
+        |fn main() {
+        |    println("$name v0.1.0");
+        |    println("Use --help for usage information");
         |}
     """.trimMargin()
 
     private fun desktopTemplate(name: String): String = """
         |// $name - HASAB Desktop Application
         |
-        |ተግባር ዋና() {
-        |    ጻፍ("Launching $name...")
-        |    ጻፍ("Desktop application initialized")
+        |fn main() {
+        |    println("Launching $name...");
+        |    println("Desktop application initialized");
         |}
     """.trimMargin()
 }

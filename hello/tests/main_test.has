@@ -1,0 +1,13 @@
+package hello
+
+ተግባር የኔ_ፍሬገስ_ፒሬዳስት() {
+    ጻፍ("tests running...")
+
+    ከሆነ(1 + 1 == 2) {
+        ጻፍ("Basic math works!")
+    } አይደለ {
+        ጻፍ("Math is broken!")
+    }
+
+    ጻፍ("All tests passed!")
+}

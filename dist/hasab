@@ -1,0 +1,14 @@
+#!/bin/sh
+# HASAB CLI launcher
+# Resolves the JAR path relative to this script and runs it.
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+JAR_PATH="$SCRIPT_DIR/hasab.jar"
+
+if [ ! -f "$JAR_PATH" ]; then
+    echo "Error: hasab.jar not found at '$JAR_PATH'" >&2
+    echo "Please ensure the HASAB CLI is installed correctly." >&2
+    exit 1
+fi
+
+exec java -jar "$JAR_PATH" "$@"
