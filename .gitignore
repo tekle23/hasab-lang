@@ -20,3 +20,6 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# CLI scaffolding (from manual `hasab new` testing)
+hasab_new_*/

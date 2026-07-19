@@ -1338,3 +1338,947 @@ HsHttpClient ..> HsException : throws on failure
 
 @enduml
 ```
+
+---
+
+## 2. CLI Toolchain — Class Diagram
+
+```plantuml
+@startuml HASAB_CLI_Class_Diagram
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+title HASAB CLI Toolchain — Class Diagram
+
+package "hasab.cli" {
+  abstract class Command {
+    +getName(): String
+    +getDescription(): String
+    +getUsage(): String
+    +run(args: List<String>, projectPath: Path): Int
+  }
+
+  class CommandRouter {
+    -commands: Map<String, Command>
+    +register(command: Command)
+    +route(args: List<String>): Int
+  }
+
+  class HasabCli {
+    -router: CommandRouter
+    +main(args: Array<String>)
+    +run(args: List<String>): Int
+  }
+
+  class Terminal {
+    +{static} RED: String
+    +{static} GREEN: String
+    +{static} YELLOW: String
+    +{static} BLUE: String
+    +{static} CYAN: String
+    +{static} RESET: String
+    +{static} BOLD: String
+    +{static} printSuccess(msg: String)
+    +{static} printError(msg: String)
+    +{static} printWarning(msg: String)
+    +{static} printInfo(msg: String)
+    +{static} printBanner()
+    +{static} printTable(headers, rows)
+    +{static} withProgressBar(label, action)
+  }
+}
+
+package "hasab.cli.config" {
+  class HasabToml {
+    +{static} parse(content: String): ProjectConfig
+    +{static} serialize(config: ProjectConfig): String
+  }
+  class ProjectConfig {
+    +name: String
+    +version: String
+    +description: String
+    +haskellVersion: String
+    +dependencies: List<String>
+    +authors: List<String>
+    +license: String
+    +repository: String
+  }
+}
+
+package "hasab.cli.commands" {
+  class NewCommand
+  class BuildCommand
+  class RunCommand
+  class TestCommand
+  class CleanCommand
+  class AddCommand
+  class RemoveCommand
+  class PublishCommand
+  class FmtCommand
+  class LintCommand
+  class DocCommand
+  class HelpCommand
+  class VersionCommand
+  class DoctorCommand
+  class PackageRegistry
+}
+
+package "hasab.cli.fmt" {
+  class HasabFormatter {
+    +format(source: String): String
+    -fixIndentation(source: String): String
+    -normalizeWhitespace(source: String): String
+    -fixOperators(source: String): String
+  }
+}
+
+package "hasab.cli.lint" {
+  class HasabLinter {
+    +lint(source: String, rules: List<LintRule>): List<LintIssue>
+  }
+  class LintRule {
+    -name: String
+    -description: String
+    -severity: LintSeverity
+  }
+  enum LintSeverity { WARNING, ERROR, INFO }
+  class LintResult {
+    +issues: List<LintIssue>
+    +passed: Boolean
+  }
+  class LintIssue {
+    +rule: LintRule
+    +line: Int
+    +column: Int
+    +message: String
+  }
+}
+
+package "hasab.cli.docgen" {
+  class HasabDocGenerator {
+    +generate(source: String, fileName: String): List<DocEntry>
+    +toMarkdown(entries: List<DocEntry>): String
+  }
+  class DocEntry {
+    +name: String
+    +type: String
+    +description: String
+    +parameters: List<String>
+    +line: Int
+  }
+}
+
+Command <|-- NewCommand
+Command <|-- BuildCommand
+Command <|-- RunCommand
+Command <|-- TestCommand
+Command <|-- CleanCommand
+Command <|-- AddCommand
+Command <|-- RemoveCommand
+Command <|-- PublishCommand
+Command <|-- FmtCommand
+Command <|-- LintCommand
+Command <|-- DocCommand
+Command <|-- HelpCommand
+Command <|-- VersionCommand
+Command <|-- DoctorCommand
+
+HasabCli *--> CommandRouter
+CommandRouter o--> Command : manages
+
+ProjectConfig <-- HasabToml : parses/serializes
+FmtCommand --> HasabFormatter : delegates
+LintCommand --> HasabLinter : delegates
+HasabLinter o--> LintRule : applies
+LintRule ..> LintSeverity
+LintResult *--> LintIssue
+DocCommand --> HasabDocGenerator : delegates
+HasabDocGenerator ..> DocEntry : produces
+
+AddCommand --> PackageRegistry
+RemoveCommand --> PackageRegistry
+PublishCommand --> PackageRegistry
+
+@enduml
+```
+
+---
+
+## 3. CLI Command Flow — Sequence Diagram
+
+```plantuml
+@startuml HASAB_CLI_Sequence
+skinparam sequenceMessageAlign center
+title HASAB CLI Command Execution Flow
+
+actor User
+participant "HasabCli" as CLI
+participant "CommandRouter" as Router
+participant "Command" as Cmd
+participant "Terminal" as Term
+participant "ProjectConfig" as Config
+participant "FileSystem" as FS
+
+User -> CLI : hasab <command> [args]
+activate CLI
+
+CLI -> Router : route(args)
+activate Router
+
+Router -> Router : parse command name
+Router -> Router : lookup command registry
+
+alt command found
+  Router -> Cmd : run(args, projectPath)
+  activate Cmd
+
+  Cmd -> Term : printInfo("Running...")
+  activate Term
+  Term --> Cmd : colored output
+  deactivate Term
+
+  Cmd -> FS : read project files
+  activate FS
+  FS --> Cmd : file contents
+  deactivate FS
+
+  Cmd -> Config : load project.toml
+  activate Config
+  Config --> Cmd : ProjectConfig
+  deactivate Config
+
+  Cmd -> Cmd : execute logic
+
+  Cmd -> Term : printSuccess/Error(...)
+  activate Term
+  Term --> Cmd : colored output
+  deactivate Term
+
+  Cmd --> Router : exitCode (0 or 1)
+  deactivate Cmd
+
+  Router --> CLI : exitCode
+else command not found
+  Router -> Term : printError("Unknown command")
+  activate Term
+  Term --> Router : colored error
+  deactivate Term
+  Router --> CLI : 1
+end
+
+CLI --> User : System.exit(exitCode)
+deactivate CLI
+
+@enduml
+```
+
+---
+
+## 4. Package Management Flow — Sequence Diagram
+
+```plantuml
+@startuml HASAB_Package_Flow
+skinparam sequenceMessageAlign center
+title HASAB Package Management Flow (add / remove / publish)
+
+actor User
+participant "AddCommand" as Add
+participant "PackageRegistry" as Reg
+participant "ProjectConfig" as Config
+participant "HasabToml" as Toml
+participant "FileSystem" as FS
+
+== Add Dependency ==
+User -> Add : hasab add <package>[@version]
+activate Add
+
+Add -> Config : load(project.toml)
+activate Config
+Config --> Add : ProjectConfig
+deactivate Config
+
+Add -> Reg : resolve(package, version)
+activate Reg
+Reg -> Reg : simulate lookup
+Reg --> Add : PackageInfo(name, version)
+deactivate Reg
+
+Add -> Add : add to dependencies list
+Add -> Config : serialize(updated config)
+activate Config
+Config --> Add : TOML string
+deactivate Config
+
+Add -> FS : write(project.toml, toml)
+activate FS
+FS --> Add : written
+deactivate FS
+
+Add -> User : printSuccess("Added <package>@<version>")
+deactivate Add
+
+== Remove Dependency ==
+User -> Add : hasab remove <package>
+activate Add
+
+Add -> Config : load(project.toml)
+Add -> Add : remove from dependencies
+Add -> FS : write(project.toml)
+Add -> User : printSuccess("Removed <package>")
+deactivate Add
+
+== Publish Package ==
+participant "PublishCommand" as Pub
+
+User -> Pub : hasab publish
+activate Pub
+
+Pub -> Config : load(project.toml)
+Pub -> FS : read all source files
+Pub -> Pub : collect API surface
+
+Pub -> Reg : register(name, version, files)
+activate Reg
+Reg -> Reg : simulate publish
+Reg --> Pub : success
+deactivate Reg
+
+Pub -> User : printSuccess("Published <name>@<version>")
+deactivate Pub
+
+@enduml
+```
+
+---
+
+## 5. Formatter and Linter — Activity Diagram
+
+```plantuml
+@startuml HASAB_Fmt_Lint_Activity
+title HASAB Formatter and Linter Processing Flow
+
+|Formatter|
+start
+:Read source file;
+:Tokenize lines;
+
+partition "Fix Indentation" {
+  :Detect block openings (colon + newline + brace);
+  :Increase indent level;
+  :Detect block closings (brace);
+  :Decrease indent level;
+  :Apply consistent indentation (2 spaces);
+}
+
+partition "Normalize Whitespace" {
+  :Collapse multiple spaces;
+  :Trim trailing whitespace;
+  :Ensure single newline at EOF;
+}
+
+partition "Fix Operators" {
+  :Normalize spacing around =, ==, arrow;
+  :Add spaces around keywords;
+}
+
+:Write formatted output;
+stop
+
+|Linter|
+start
+:Read source file;
+
+partition "Apply Rules" {
+  :Rule: Unused variables;
+  :Rule: Empty blocks;
+  :Rule: Trailing whitespace;
+  :Rule: Long lines (>120 chars);
+  :Rule: Missing documentation;
+  :Rule: Variable shadowing;
+}
+
+partition "Collect Results" {
+  :Create LintIssue per violation;
+  :Calculate passed = (errors == 0);
+  :Group by severity;
+}
+
+:Print colored output;
+if (passed?) then (yes)
+  :printSuccess("All checks passed");
+else (no)
+  :printError("N issues found");
+endif
+stop
+
+@enduml
+```
+
+---
+
+## 6. Project Structure — Component Diagram
+
+```plantuml
+@startuml HASAB_Component_Diagram
+skinparam component {
+  BackgroundColor<<cli>> LightBlue
+  BackgroundColor<<core>> LightGreen
+  BackgroundColor<<stdlib>> LightYellow
+}
+title HASAB Project — Component Overview
+
+package "hasab.parser" <<core>> {
+  [Lexer]
+  [Parser]
+  [AstBuilder]
+}
+
+package "hasab.codegen" <<core>> {
+  [CodeGenerator]
+  [TypeChecker]
+}
+
+package "hasab.compiler" <<core>> {
+  [HasabToJavaCompiler]
+  [CompilationResult]
+}
+
+package "hasab.cli" <<cli>> {
+  [HasabCli]
+  [CommandRouter]
+  [Terminal]
+}
+
+package "hasab.cli.config" <<cli>> {
+  [HasabToml]
+  [ProjectConfig]
+}
+
+package "hasab.cli.commands" <<cli>> {
+  [NewCommand]
+  [BuildCommand]
+  [RunCommand]
+  [TestCommand]
+  [CleanCommand]
+  [AddCommand]
+  [RemoveCommand]
+  [PublishCommand]
+  [HelpCommand]
+  [VersionCommand]
+  [DoctorCommand]
+}
+
+package "hasab.cli.fmt" <<cli>> {
+  [FmtCommand]
+  [HasabFormatter]
+}
+
+package "hasab.cli.lint" <<cli>> {
+  [LintCommand]
+  [HasabLinter]
+  [LintRules]
+}
+
+package "hasab.cli.docgen" <<cli>> {
+  [DocCommand]
+  [HasabDocGenerator]
+}
+
+package "hasab.runtime.core" <<stdlib>> {
+  [HsObject]
+  [HsString]
+  [HsInt]
+  [HsBool]
+}
+
+[HasabCli] --> [CommandRouter]
+[CommandRouter] --> [NewCommand]
+[CommandRouter] --> [BuildCommand]
+[CommandRouter] --> [RunCommand]
+[CommandRouter] --> [TestCommand]
+[CommandRouter] --> [CleanCommand]
+[CommandRouter] --> [AddCommand]
+[CommandRouter] --> [RemoveCommand]
+[CommandRouter] --> [PublishCommand]
+[CommandRouter] --> [FmtCommand]
+[CommandRouter] --> [LintCommand]
+[CommandRouter] --> [DocCommand]
+[CommandRouter] --> [HelpCommand]
+[CommandRouter] --> [VersionCommand]
+[CommandRouter] --> [DoctorCommand]
+
+[BuildCommand] --> [HasabToJavaCompiler]
+[FmtCommand] --> [HasabFormatter]
+[LintCommand] --> [HasabLinter]
+[DocCommand] --> [HasabDocGenerator]
+
+@enduml
+```
+
+---
+
+## 7. LSP Server Architecture — Component Diagram
+
+```plantuml
+@startuml HASAB_LSP_Component_Diagram
+skinparam component {
+  BackgroundColor<<lsp>> LightBlue
+  BackgroundColor<<compiler>> LightGreen
+  BackgroundColor<<core>> LightYellow
+}
+title HASAB Language Server — Component Overview
+
+package "LSP Protocol Layer" <<lsp>> {
+  [HasabLanguageServer]
+  [HasabTextDocumentService]
+  [HasabWorkspaceService]
+  [HasabLspLauncher]
+}
+
+package "Feature Engines" <<lsp>> {
+  [DiagnosticEngine]
+  [CompletionEngine]
+  [HoverEngine]
+  [DefinitionEngine]
+  [ReferenceEngine]
+  [RenameEngine]
+  [SignatureEngine]
+  [FormattingEngine]
+  [CodeActionEngine]
+  [DocumentHighlightEngine]
+  [WorkspaceSymbolEngine]
+}
+
+package "Infrastructure" <<lsp>> {
+  [DocumentState]
+  [WorkspaceIndex]
+  [LspLogger]
+  [PerformanceMetrics]
+}
+
+package "HASAB Compiler Frontend" <<compiler>> {
+  [Lexer]
+  [Parser]
+  [SemanticAnalyzer]
+  [TypeChecker]
+  [SymbolTable]
+}
+
+package "HASAB AST" <<core>> {
+  [Module]
+  [Decl]
+  [Expr]
+  [Stmt]
+  [TypeNode]
+}
+
+[HasabLanguageServer] --> [HasabTextDocumentService]
+[HasabLanguageServer] --> [HasabWorkspaceService]
+[HasabLspLauncher] --> [HasabLanguageServer]
+
+[HasabTextDocumentService] --> [DiagnosticEngine]
+[HasabTextDocumentService] --> [CompletionEngine]
+[HasabTextDocumentService] --> [HoverEngine]
+[HasabTextDocumentService] --> [DefinitionEngine]
+[HasabTextDocumentService] --> [ReferenceEngine]
+[HasabTextDocumentService] --> [RenameEngine]
+[HasabTextDocumentService] --> [SignatureEngine]
+[HasabTextDocumentService] --> [FormattingEngine]
+[HasabTextDocumentService] --> [CodeActionEngine]
+[HasabTextDocumentService] --> [DocumentHighlightEngine]
+
+[HasabWorkspaceService] --> [WorkspaceSymbolEngine]
+
+[DiagnosticEngine] --> [DocumentState]
+[CompletionEngine] --> [WorkspaceIndex]
+[HoverEngine] --> [DocumentState]
+[DefinitionEngine] --> [WorkspaceIndex]
+[ReferenceEngine] --> [WorkspaceIndex]
+[RenameEngine] --> [WorkspaceIndex]
+[DocumentHighlightEngine] --> [DocumentState]
+[WorkspaceSymbolEngine] --> [WorkspaceIndex]
+
+[DocumentState] --> [Lexer]
+[DocumentState] --> [Parser]
+[DocumentState] --> [SemanticAnalyzer]
+[DocumentState] --> [TypeChecker]
+[DocumentState] --> [SymbolTable]
+
+[WorkspaceIndex] --> [DocumentState]
+[WorkspaceIndex] --> [Decl]
+
+[FormattingEngine] ..> [HasabFormatter] : delegates
+
+@enduml
+```
+
+---
+
+## 8. LSP Request Flow — Sequence Diagram
+
+```plantuml
+@startuml HASAB_LSP_Request_Flow
+skinparam sequenceMessageAlign center
+title HASAB LSP Request Processing Flow
+
+actor Editor
+participant "LSP Client"
+participant "HasabLanguageServer"
+participant "TextDocumentService"
+participant "Engine"
+participant "DocumentState"
+participant "WorkspaceIndex"
+participant "Compiler"
+
+Editor -> LSP Client : User action
+activate LSP Client
+
+LSP Client -> HasabLanguageServer : JSON-RPC request
+activate HasabLanguageServer
+
+HasabLanguageServer -> TextDocumentService : dispatch
+activate TextDocumentService
+
+TextDocumentService -> WorkspaceIndex : getDocument(uri)
+activate WorkspaceIndex
+WorkspaceIndex --> TextDocumentService : DocumentState
+deactivate WorkspaceIndex
+
+TextDocumentService -> DocumentState : get/parse content
+activate DocumentState
+DocumentState -> Compiler : Lexer -> Parser
+activate Compiler
+Compiler --> DocumentState : ParseResult + AST
+deactivate Compiler
+
+DocumentState -> Compiler : SemanticAnalyzer
+activate Compiler
+Compiler --> DocumentState : SemanticModel
+deactivate Compiler
+
+DocumentState -> Compiler : TypeChecker
+activate Compiler
+Compiler --> DocumentState : TypeCheckResult
+deactivate Compiler
+
+DocumentState --> TextDocumentService : FullAnalysisResult
+deactivate DocumentState
+
+TextDocumentService -> Engine : computeXxx()
+activate Engine
+Engine --> TextDocumentService : result
+deactivate Engine
+
+TextDocumentService --> HasabLanguageServer : LSP response
+deactivate TextDocumentService
+
+HasabLanguageServer --> LSP Client : JSON-RPC response
+deactivate HasabLanguageServer
+
+LSP Client --> Editor : Update UI
+deactivate LSP Client
+
+@enduml
+```
+
+---
+
+## 9. Document Lifecycle — State Diagram
+
+```plantuml
+@startuml HASAB_Document_Lifecycle
+title HASAB Document Lifecycle State Diagram
+
+[*] --> Closed : editor opens file
+
+Closed --> Open : didOpen
+note right of Open
+  Create DocumentState
+  Initial parse + analysis
+  Index symbols in WorkspaceIndex
+  Publish diagnostics
+end note
+
+Open --> Parsing : content changed
+Parsing --> Analyzing : parse complete
+Analyzing --> Publishing : analysis complete
+Publishing --> Open : diagnostics sent
+
+Open --> Closed : didClose
+note right of Closed
+  Remove from WorkspaceIndex
+  Clear diagnostics
+end note
+
+Open --> Saving : didSave
+Saving --> Publishing : save complete
+
+Parsing --> Open : parse failed (recoverable)
+
+@enduml
+```
+
+---
+
+## 10. LSP Server Class Diagram
+
+```plantuml
+@startuml HASAB_LSP_Class_Diagram
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+title HASAB LSP Server — Core Class Diagram
+
+package "hasab.lsp" {
+  class HasabLanguageServer {
+    -workspaceIndex: WorkspaceIndex
+    -logger: LspLogger
+    -metrics: PerformanceMetrics
+    +initialize(params): InitializeResult
+    +shutdown(): CompletableFuture
+    +exit()
+    +getTextDocumentService(): HasabTextDocumentService
+    +getWorkspaceService(): HasabWorkspaceService
+    +getWorkspaceIndex(): WorkspaceIndex
+    +getPerformanceMetrics(): PerformanceMetrics
+  }
+
+  class HasabTextDocumentService {
+    -diagnosticEngine: DiagnosticEngine
+    -completionEngine: CompletionEngine
+    -hoverEngine: HoverEngine
+    -definitionEngine: DefinitionEngine
+    -referenceEngine: ReferenceEngine
+    -renameEngine: RenameEngine
+    -signatureEngine: SignatureEngine
+    -formattingEngine: FormattingEngine
+    -codeActionEngine: CodeActionEngine
+    -highlightEngine: DocumentHighlightEngine
+    +client: LanguageClient?
+    +didOpen(params)
+    +didChange(params)
+    +didClose(params)
+    +didSave(params)
+    +completion(params): CompletableFuture
+    +hover(params): CompletableFuture
+    +definition(params): CompletableFuture
+    +references(params): CompletableFuture
+    +documentHighlight(params): CompletableFuture
+    +documentSymbol(params): CompletableFuture
+    +signatureHelp(params): CompletableFuture
+    +formatting(params): CompletableFuture
+    +rangeFormatting(params): CompletableFuture
+    +onTypeFormatting(params): CompletableFuture
+    +codeAction(params): CompletableFuture
+    +rename(params): CompletableFuture
+  }
+
+  class HasabWorkspaceService {
+    -symbolEngine: WorkspaceSymbolEngine
+    +didChangeWorkspaceFolders(params)
+    +didChangeConfiguration(params)
+    +didChangeWatchedFiles(params)
+    +symbol(params): CompletableFuture
+    +executeCommand(params): CompletableFuture
+  }
+
+  class DocumentState {
+    +uri: String
+    +languageId: String
+    +version: Int
+    +content: String
+    +lexerResult: LexerResult?
+    +parseResult: ParseResult?
+    +semanticModel: SemanticModel?
+    +typeCheckResult: TypeCheckResult?
+    +updateContent(newContent, newVersion)
+    +parse(): ParseResult
+    +analyzeSemantics(): SemanticModel
+    +typeCheck(): TypeCheckResult
+    +fullAnalysis(): FullAnalysisResult
+    +invalidate()
+  }
+
+  class WorkspaceIndex {
+    -documents: Map
+    -fileSymbols: Map
+    -symbolUsages: Map
+    +addDocument(state)
+    +removeDocument(uri)
+    +updateDocument(state)
+    +getDocument(uri): DocumentState?
+    +getAllDocuments(): Map
+    +getSymbolsForFile(uri): List
+    +getAllSymbols(): List
+    +getSymbolsByName(name): List
+    +getSymbolsByKind(kind): List
+    +searchSymbols(query): List
+    +findUsages(name): List
+  }
+}
+
+package "hasab.lsp.logging" {
+  class LspLogger {
+    -prefix: String
+    -minLevel: Level
+    +debug(message, throwable)
+    +info(message, throwable)
+    +warn(message, throwable)
+    +error(message, throwable)
+    +getRecentLogs(count): List
+    +getLogsByLevel(level): List
+    +clear()
+  }
+
+  class PerformanceMetrics {
+    -counters: Map
+    -timings: Map
+    +incrementCounter(name)
+    +recordTiming(name, durationNs)
+    +measure(name, block): T
+    +getCounter(name): Long
+    +getAverageTimingNs(name): Double
+    +snapshot(): Map
+    +reset()
+  }
+}
+
+HasabLanguageServer *--> HasabTextDocumentService
+HasabLanguageServer *--> HasabWorkspaceService
+HasabLanguageServer *--> WorkspaceIndex
+HasabLanguageServer *--> PerformanceMetrics
+
+HasabTextDocumentService o--> DiagnosticEngine
+HasabTextDocumentService o--> CompletionEngine
+HasabTextDocumentService o--> HoverEngine
+HasabTextDocumentService o--> DefinitionEngine
+HasabTextDocumentService o--> ReferenceEngine
+HasabTextDocumentService o--> RenameEngine
+HasabTextDocumentService o--> SignatureEngine
+HasabTextDocumentService o--> FormattingEngine
+HasabTextDocumentService o--> CodeActionEngine
+HasabTextDocumentService o--> DocumentHighlightEngine
+
+HasabWorkspaceService o--> WorkspaceSymbolEngine
+
+WorkspaceIndex o--> DocumentState
+DocumentState --> WorkspaceIndex : indexed by
+
+@enduml
+```
+
+---
+
+## 11. Feature Engine Architecture — Package Diagram
+
+```plantuml
+@startuml HASAB_LSP_Package_Diagram
+title HASAB LSP Feature Engine Package Structure
+
+package "hasab.lsp" {
+  [HasabLanguageServer]
+  [HasabTextDocumentService]
+  [HasabWorkspaceService]
+  [DocumentState]
+  [WorkspaceIndex]
+}
+
+package "hasab.lsp.diagnostics" {
+  [DiagnosticEngine]
+}
+
+package "hasab.lsp.completion" {
+  [CompletionEngine]
+}
+
+package "hasab.lsp.hover" {
+  [HoverEngine]
+}
+
+package "hasab.lsp.definition" {
+  [DefinitionEngine]
+}
+
+package "hasab.lsp.references" {
+  [ReferenceEngine]
+}
+
+package "hasab.lsp.rename" {
+  [RenameEngine]
+}
+
+package "hasab.lsp.signature" {
+  [SignatureEngine]
+}
+
+package "hasab.lsp.formatting" {
+  [FormattingEngine]
+}
+
+package "hasab.lsp.codeaction" {
+  [CodeActionEngine]
+}
+
+package "hasab.lsp.highlighting" {
+  [DocumentHighlightEngine]
+}
+
+package "hasab.lsp.symbol" {
+  [WorkspaceSymbolEngine]
+}
+
+package "hasab.lsp.logging" {
+  [LspLogger]
+  [PerformanceMetrics]
+}
+
+[HasabTextDocumentService] --> [DiagnosticEngine]
+[HasabTextDocumentService] --> [CompletionEngine]
+[HasabTextDocumentService] --> [HoverEngine]
+[HasabTextDocumentService] --> [DefinitionEngine]
+[HasabTextDocumentService] --> [ReferenceEngine]
+[HasabTextDocumentService] --> [RenameEngine]
+[HasabTextDocumentService] --> [SignatureEngine]
+[HasabTextDocumentService] --> [FormattingEngine]
+[HasabTextDocumentService] --> [CodeActionEngine]
+[HasabTextDocumentService] --> [DocumentHighlightEngine]
+[HasabWorkspaceService] --> [WorkspaceSymbolEngine]
+
+@enduml
+```
+
+---
+
+## 12. State Diagram — Incremental Change Tracking
+
+```plantuml
+@startuml IncrementalChangeTracking
+skinparam state {
+  BackgroundColor LightBlue
+  BorderColor DarkBlue
+  ArrowColor DarkBlue
+}
+title Document Incremental Change Tracking
+
+state "Idle" as idle
+state "Content Updated" as updated
+state "Classify Change" as classify
+state "Non-Semantic" as nonsem
+state "Skip Re-analysis" as skip
+state "Semantic Change" as sem
+state "Invalidate All Caches" as invalidate
+state "Structural Change" as structural
+state "Full Invalidation + Re-index" as full
+
+idle --> updated : didChange()
+updated --> classify : detectChangeType()
+classify --> nonsem : only whitespace/comments changed
+nonsem --> skip : return early
+skip --> idle : content updated
+classify --> sem : code changed (no brace diff)
+sem --> invalidate : invalidate()
+invalidate --> idle : re-analyze on next request
+classify --> structural : braces/brackets changed
+structural --> full : invalidate() + updateDocument()
+full --> idle : full re-analysis on next request
+
+@enduml
+```

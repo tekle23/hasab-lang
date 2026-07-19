@@ -1,0 +1,96 @@
+{
+  "name": "hasab-lang",
+  "displayName": "HASAB Language Support",
+  "description": "Language support for the HASAB programming language",
+  "version": "1.0.0",
+  "publisher": "hasab-lang",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:hasab"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "hasab",
+        "aliases": [
+          "HASAB",
+          "hasab"
+        ],
+        "extensions": [
+          ".hs",
+          ".hasab"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hasab",
+        "scopeName": "source.hasab",
+        "path": "./syntaxes/hasab.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "hasab.restartServer",
+        "title": "HASAB: Restart Language Server"
+      },
+      {
+        "command": "hasab.showOutput",
+        "title": "HASAB: Show Output"
+      }
+    ],
+    "configuration": {
+      "title": "HASAB",
+      "properties": {
+        "hasab.server.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the HASAB language server JAR"
+        },
+        "hasab.server.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments for the language server"
+        },
+        "hasab.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace communication between VS Code and the language server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "name": "HASAB",
+  "scopeName": "source.hasab",
+  "fileTypes": ["hs", "hasab"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#strings" },
+    { "include": "#functions" },
+    { "include": "#operators" },
+    { "include": "#brackets" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.hasab",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.hasab",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.hasab",
+          "match": "\\b(fn|return|if|else|while|for|in|break|continue|let|mut|pub|struct|enum|impl|trait|type|mod|use|as|where|self|Self)\\b"
+        },
+        {
+          "name": "keyword.storage.hasab",
+          "match": "\\b(let|mut|const)\\b"
+        },
+        {
+          "name": "keyword.operator.hasab",
+          "match": "\\b(and|or|not|is|in)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "support.type.hasab",
+          "match": "\\b(int|float|string|bool|void|char|byte)\\b"
+        },
+        {
+          "name": "support.type.builtin.hasab",
+          "match": "\\b(Self|Option|Result|Vec|Map|Set|Box|Rc|Arc)\\b"
+        },
+        {
+          "name": "entity.name.type.hasab",
+          "match": "\\b[A-Z][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.hasab",
+          "match": "\\b(true|false|null|none)\\b"
+        },
+        {
+          "name": "constant.numeric.hasab",
+          "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+        },
+        {
+          "name": "constant.character.hasab",
+          "match": "'.'"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.hasab",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.hasab",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.hasab",
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arithmetic.hasab",
+          "match": "\\+|-|\\*|/|%"
+        },
+        {
+          "name": "keyword.operator.comparison.hasab",
+          "match": "==|!=|<|>|<=|>="
+        },
+        {
+          "name": "keyword.operator.assignment.hasab",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arrow.hasab",
+          "match": "->|=>"
+        }
+      ]
+    },
+    "brackets": {
+      "patterns": [
+        {
+          "name": "punctuation.bracket.round.hasab",
+          "match": "\\(|\\)"
+        },
+        {
+          "name": "punctuation.bracket.square.hasab",
+          "match": "\\[|\\]"
+        },
+        {
+          "name": "punctuation.bracket.curly.hasab",
+          "match": "\\{|\\}"
+        },
+        {
+          "name": "punctuation.separator.hasab",
+          "match": ",|;"
+        },
+        {
+          "name": "punctuation.accessor.hasab",
+          "match": "\\."
+        }
+      ]
+    }
+  }
+}
