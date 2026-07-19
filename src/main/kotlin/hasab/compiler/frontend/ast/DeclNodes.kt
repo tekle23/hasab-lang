@@ -41,6 +41,7 @@ public sealed interface Decl : AstNode
 
 public data class FnDecl(
     val name: String,
+    val originalName: String = name,
     val parameters: List<FunctionParam>,
     val returnType: TypeNode?,
     val body: Block?,

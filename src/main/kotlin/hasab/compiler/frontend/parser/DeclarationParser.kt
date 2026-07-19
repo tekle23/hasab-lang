@@ -58,6 +58,8 @@ public class DeclarationParser(
     public fun parseFnDecl(isPublic: Boolean): FnDecl {
         val token = stream.expectKeyword("fn")
         val nameToken = if (stream.peek().type is TokenType.Keyword) stream.advance() else stream.expect(TokenType.Identifier)
+        val originalName = nameToken.lexeme
+        val name = normalizeEntryPointName(originalName)
         val params = parseParameterList()
 
         var returnType: TypeNode? = null
@@ -74,7 +76,8 @@ public class DeclarationParser(
         }
 
         return FnDecl(
-            name = nameToken.lexeme,
+            name = name,
+            originalName = originalName,
             parameters = params,
             returnType = returnType,
             body = body,
@@ -380,6 +383,10 @@ public class DeclarationParser(
             fileName = token.fileName, line = token.line, column = token.column,
             startOffset = token.startOffset, endOffset = inner.endOffset,
         )
+    }
+
+    private fun normalizeEntryPointName(name: String): String {
+        return if (name == "ዋና") "main" else name
     }
 
     private fun reportError(message: String, token: Token, hint: String? = null) {

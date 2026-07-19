@@ -21,7 +21,7 @@ class AstPrinterTest {
         val mod = Module(
             name = "test",
             declarations = listOf(
-                FnDecl("main", emptyList(), VoidType("t.hb", 1, 1, 0, 4), Block(
+                FnDecl("main", "main", emptyList(), VoidType("t.hb", 1, 1, 0, 4), Block(
                     listOf(
                         ExprStmt(CallExpr(
                             callee = IdentifierExpr("println", "t.hb", 1, 5, 4, 11),
@@ -223,7 +223,7 @@ class AstPrinterTest {
         val impl = ImplDecl(
             targetType = IdentifierType("Point", "t.hb", 1, 6, 5, 10),
             methods = listOf(
-                FnDecl("distance", emptyList(), IdentifierType("float", "t.hb", 1, 1, 0, 5), null, false, "t.hb", 1, 1, 0, 20),
+                FnDecl("distance", "distance", emptyList(), IdentifierType("float", "t.hb", 1, 1, 0, 5), null, false, "t.hb", 1, 1, 0, 20),
             ),
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 40,
         )
@@ -238,7 +238,7 @@ class AstPrinterTest {
         val trait = TraitDecl(
             name = "Comparable",
             methods = listOf(
-                FnDecl("compare", emptyList(), IdentifierType("int", "t.hb", 1, 1, 0, 3), null, false, "t.hb", 1, 1, 0, 20),
+                FnDecl("compare", "compare", emptyList(), IdentifierType("int", "t.hb", 1, 1, 0, 3), null, false, "t.hb", 1, 1, 0, 20),
             ),
             isPublic = true,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 40,
@@ -272,7 +272,7 @@ class AstPrinterTest {
 
     @Test
     fun `print pub declaration`() {
-        val fn = FnDecl("main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
+        val fn = FnDecl("main", "main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
         val pub = PubDecl(fn, "t.hb", 1, 1, 0, 15)
         val output = printer.print(pub)
         assertContains(output, "PubDecl")
@@ -284,7 +284,7 @@ class AstPrinterTest {
         val mod = ModDecl(
             name = "mymod",
             body = listOf(
-                FnDecl("f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10),
+                FnDecl("f", "f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10),
             ),
             isPublic = true,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 30,
@@ -414,6 +414,7 @@ class AstPrinterTest {
     fun `print extern function (null body)`() {
         val fn = FnDecl(
             name = "extern_fn",
+            originalName = "extern_fn",
             parameters = listOf(FunctionParam("x", IdentifierType("int", "t.hb", 1, 1, 0, 3), false, "t.hb", 1, 1, 0, 5)),
             returnType = VoidType("t.hb", 1, 1, 0, 4),
             body = null,

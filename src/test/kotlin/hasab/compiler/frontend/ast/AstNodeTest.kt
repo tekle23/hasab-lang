@@ -81,6 +81,7 @@ class AstNodeTest {
         val body = block()
         val fn = FnDecl(
             name = "f",
+            originalName = "f",
             parameters = listOf(FunctionParam("x", paramType, false, "f.hb", 1, 1, 0, 5)),
             returnType = retType,
             body = body,
@@ -95,6 +96,7 @@ class AstNodeTest {
     fun `children of FnDecl with null body and no return type`() {
         val fn = FnDecl(
             name = "f",
+            originalName = "f",
             parameters = emptyList(),
             returnType = null,
             body = null,
@@ -300,6 +302,7 @@ class AstNodeTest {
         docComment: String? = null,
     ) = FnDecl(
         name = name,
+        originalName = name,
         parameters = emptyList(),
         returnType = null,
         body = null,

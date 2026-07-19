@@ -22,6 +22,7 @@ class AstValidatorTest {
     fun `valid function declaration has no issues`() {
         val fn = FnDecl(
             name = "main",
+            originalName = "main",
             parameters = listOf(FunctionParam("x", IdentifierType("int", "t.hb", 1, 6, 5, 8), false, "t.hb", 1, 6, 5, 8)),
             returnType = IdentifierType("int", "t.hb", 1, 12, 11, 14),
             body = Block(
@@ -90,7 +91,7 @@ class AstValidatorTest {
                 EnumDecl("Shape", listOf(
                     EnumVariant("Circle", emptyList(), "t.hb", 1, 1, 0, 5),
                 ), false, "t.hb", 1, 1, 0, 40),
-                FnDecl("main", emptyList(), VoidType("t.hb", 1, 1, 0, 4),
+                FnDecl("main", "main", emptyList(), VoidType("t.hb", 1, 1, 0, 4),
                     Block(listOf(
                         ExprStmt(CallExpr(
                             IdentifierExpr("println", "t.hb", 1, 5, 4, 11),
@@ -111,7 +112,7 @@ class AstValidatorTest {
     @Test
     fun `error when endOffset less than startOffset`() {
         val node = FnDecl(
-            name = "f", parameters = emptyList(), returnType = null, body = null, isPublic = false,
+            name = "f", originalName = "f", parameters = emptyList(), returnType = null, body = null, isPublic = false,
             fileName = "t.hb", line = 1, column = 1, startOffset = 10, endOffset = 5,
         )
         val issues = validator.validate(node)
@@ -137,7 +138,7 @@ class AstValidatorTest {
     @Test
     fun `error for empty function name`() {
         val fn = FnDecl(
-            name = "", parameters = emptyList(), returnType = null, body = null, isPublic = false,
+            name = "", originalName = "", parameters = emptyList(), returnType = null, body = null, isPublic = false,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 5,
         )
         val issues = validator.validate(fn)
@@ -270,6 +271,7 @@ class AstValidatorTest {
     fun `error for duplicate parameter names`() {
         val fn = FnDecl(
             name = "f",
+            originalName = "f",
             parameters = listOf(
                 FunctionParam("x", IdentifierType("int", "t.hb", 1, 1, 0, 3), false, "t.hb", 1, 1, 0, 5),
                 FunctionParam("x", IdentifierType("int", "t.hb", 1, 1, 0, 3), false, "t.hb", 1, 1, 0, 5),
@@ -444,7 +446,7 @@ class AstValidatorTest {
     fun `valid mod declaration with body`() {
         val mod = ModDecl(
             name = "mymod",
-            body = listOf(FnDecl("f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)),
+            body = listOf(FnDecl("f", "f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)),
             isPublic = true,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 30,
         )
@@ -466,7 +468,7 @@ class AstValidatorTest {
 
     @Test
     fun `valid pub declaration`() {
-        val fn = FnDecl("main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
+        val fn = FnDecl("main", "main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
         val pub = PubDecl(fn, "t.hb", 1, 1, 0, 15)
         val issues = validator.validate(pub)
         assertTrue(issues.isEmpty(), "Expected no issues, got: $issues")

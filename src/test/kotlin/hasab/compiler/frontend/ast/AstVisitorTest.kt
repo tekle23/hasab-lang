@@ -131,7 +131,7 @@ class AstVisitorTest {
         val mod = Module(
             name = "test",
             declarations = listOf(
-                FnDecl("main", emptyList(), null, Block(emptyList(), "t.hb", 1, 1, 0, 10), false, "t.hb", 1, 1, 0, 15),
+                FnDecl("main", "main", emptyList(), null, Block(emptyList(), "t.hb", 1, 1, 0, 10), false, "t.hb", 1, 1, 0, 15),
             ),
             fileName = "t.hb",
         )
@@ -304,7 +304,7 @@ class AstVisitorTest {
         val impl = ImplDecl(
             targetType = IdentifierType("int", "t.hb", 1, 6, 5, 8),
             methods = listOf(
-                FnDecl("add", emptyList(), null, null, false, "t.hb", 1, 1, 0, 15),
+                FnDecl("add", "add", emptyList(), null, null, false, "t.hb", 1, 1, 0, 15),
             ),
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 30,
         )
@@ -320,7 +320,7 @@ class AstVisitorTest {
         val trait = TraitDecl(
             name = "Comparable",
             methods = listOf(
-                FnDecl("compare", emptyList(), null, null, false, "t.hb", 1, 1, 0, 20),
+                FnDecl("compare", "compare", emptyList(), null, null, false, "t.hb", 1, 1, 0, 20),
             ),
             isPublic = true,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 40,
@@ -359,7 +359,7 @@ class AstVisitorTest {
     @Test
     fun `accept dispatches to visitPubDecl`() {
         val counter = NodeCounter()
-        val fn = FnDecl("main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
+        val fn = FnDecl("main", "main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
         val pub = PubDecl(fn, "t.hb", 1, 1, 0, 15)
         pub.accept(counter)
         assertEquals(1, counter.pubDecls)
@@ -371,7 +371,7 @@ class AstVisitorTest {
         val counter = NodeCounter()
         val mod = ModDecl(
             name = "mymod",
-            body = listOf(FnDecl("f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)),
+            body = listOf(FnDecl("f", "f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)),
             isPublic = true,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 30,
         )
@@ -442,7 +442,7 @@ class AstVisitorTest {
         val mod = Module(
             name = "test",
             declarations = listOf(
-                FnDecl("main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10),
+                FnDecl("main", "main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10),
                 StructDecl("Point", emptyList(), false, "t.hb", 1, 1, 0, 20),
             ),
             fileName = "t.hb",
@@ -504,7 +504,7 @@ class AstVisitorTest {
         val mod = Module(
             name = "test",
             declarations = listOf(
-                FnDecl("main", emptyList(), null, Block(
+                FnDecl("main", "main", emptyList(), null, Block(
                     statements = listOf(
                         ExprStmt(CallExpr(
                             callee = IdentifierExpr("println", "t.hb", 1, 5, 4, 11),

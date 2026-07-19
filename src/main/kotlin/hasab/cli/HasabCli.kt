@@ -4,6 +4,8 @@ import hasab.cli.commands.*
 import hasab.cli.fmt.FmtCommand
 import hasab.cli.lint.LintCommand
 import hasab.cli.docgen.DocCommand
+import java.io.PrintStream
+import java.nio.charset.StandardCharsets
 
 /**
  * Main entry point for the HASAB CLI toolchain.
@@ -46,6 +48,8 @@ public object HasabCli {
      */
     @JvmStatic
     public fun main(args: Array<String>) {
+        System.setOut(PrintStream(System.out, true, StandardCharsets.UTF_8.name()))
+        System.setErr(PrintStream(System.err, true, StandardCharsets.UTF_8.name()))
         val exitCode = run(args)
         if (exitCode != 0) {
             kotlin.system.exitProcess(exitCode)

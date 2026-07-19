@@ -26,6 +26,7 @@ class AstSerializerTest {
     fun `serialize simple function`() {
         val fn = FnDecl(
             name = "main",
+            originalName = "main",
             parameters = emptyList(),
             returnType = VoidType("t.hb", 1, 1, 0, 4),
             body = Block(listOf(
@@ -222,7 +223,7 @@ class AstSerializerTest {
     fun `serialize impl declaration`() {
         val impl = ImplDecl(
             targetType = IdentifierType("Point", "t.hb", 1, 6, 5, 10),
-            methods = listOf(FnDecl("distance", emptyList(), null, null, false, "t.hb", 1, 1, 0, 20)),
+            methods = listOf(FnDecl("distance", "distance", emptyList(), null, null, false, "t.hb", 1, 1, 0, 20)),
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 40,
         )
         val json = serializer.serialize(impl)
@@ -272,7 +273,7 @@ class AstSerializerTest {
     fun `serialize mod declaration`() {
         val mod = ModDecl(
             name = "mymod",
-            body = listOf(FnDecl("f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)),
+            body = listOf(FnDecl("f", "f", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)),
             isPublic = true,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 30,
         )
@@ -283,7 +284,7 @@ class AstSerializerTest {
 
     @Test
     fun `serialize pub declaration`() {
-        val fn = FnDecl("main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
+        val fn = FnDecl("main", "main", emptyList(), null, null, false, "t.hb", 1, 1, 0, 10)
         val pub = PubDecl(fn, "t.hb", 1, 1, 0, 15)
         val json = serializer.serialize(pub)
         assertContains(json, "\"type\": \"PubDecl\"")
@@ -437,7 +438,7 @@ class AstSerializerTest {
     @Test
     fun `serialize node with doc comment`() {
         val fn = FnDecl(
-            name = "main", parameters = emptyList(), returnType = null, body = null, isPublic = false,
+            name = "main", originalName = "main", parameters = emptyList(), returnType = null, body = null, isPublic = false,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 10,
             docComment = "Entry point",
         )
@@ -448,7 +449,7 @@ class AstSerializerTest {
     @Test
     fun `serialize node without doc comment omits field`() {
         val fn = FnDecl(
-            name = "main", parameters = emptyList(), returnType = null, body = null, isPublic = false,
+            name = "main", originalName = "main", parameters = emptyList(), returnType = null, body = null, isPublic = false,
             fileName = "t.hb", line = 1, column = 1, startOffset = 0, endOffset = 10,
         )
         val json = serializer.serialize(fn)
@@ -463,7 +464,7 @@ class AstSerializerTest {
             name = "test",
             declarations = listOf(
                 UseDecl(listOf("std", "io"), false, "t.hb", 1, 1, 0, 15),
-                FnDecl("main", emptyList(), VoidType("t.hb", 1, 1, 0, 4),
+                FnDecl("main", "main", emptyList(), VoidType("t.hb", 1, 1, 0, 4),
                     Block(listOf(
                         ExprStmt(CallExpr(
                             IdentifierExpr("println", "t.hb", 1, 5, 4, 11),

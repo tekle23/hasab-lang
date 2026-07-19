@@ -53,12 +53,13 @@ tasks.shadowJar {
 
 tasks.register<Copy>("dist") {
     dependsOn("shadowJar")
-    from("dist")
     into(layout.buildDirectory.dir("dist"))
+    from("dist") {
+        include("hasab", "hasab.bat")
+    }
     from(tasks.shadowJar.map { it.archiveFile }) {
         rename { "hasab.jar" }
     }
-    into(layout.buildDirectory.dir("dist"))
 }
 
 tasks.distZip {

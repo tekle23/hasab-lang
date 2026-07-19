@@ -401,10 +401,14 @@ public class ExpressionParser(
                 stream.advance()
                 IdentifierExpr(token.lexeme, token.fileName, token.line, token.column, token.startOffset, token.endOffset)
             }
+            "println" -> {
+                stream.advance()
+                IdentifierExpr(keyword.tokenString, token.fileName, token.line, token.column, token.startOffset, token.endOffset)
+            }
             else -> {
                 reportError("Unexpected keyword in expression: ${keyword.tokenString}", token)
                 stream.advance()
-                IdentifierExpr(token.lexeme, token.fileName, token.line, token.column, token.startOffset, token.endOffset)
+                IdentifierExpr(keyword.tokenString, token.fileName, token.line, token.column, token.startOffset, token.endOffset)
             }
         }
     }
